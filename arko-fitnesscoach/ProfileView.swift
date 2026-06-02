@@ -2,7 +2,9 @@ import SwiftUI
 
 struct ProfileView: View {
     @State private var profile = UserProfile.load()
-    @State private var notificationsEnabled = true
+    @StateObject private var notifications = NotificationService.shared
+    @ObservedObject private var auth = AuthManager.shared
+    @StateObject private var historyStore = FirestoreWorkoutHistoryStore.shared
 
     var body: some View {
         ZStack {
@@ -14,11 +16,49 @@ struct ProfileView: View {
                     goalsCard
                     settingsCard
                     aboutCard
+                    logoutButton
                     Spacer(minLength: 100)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
             }
+        }
+        .task { _ = await historyStore.loadAllSessions() }
+    }
+
+    // MARK: - Streak calculation
+
+    private var currentStreak: Int {
+        let cal = Calendar.current
+        let completed = historyStore.sessions.filter { $0.isCompleted }
+        var streak = 0
+        var checkDate = Date()
+        while true {
+            let hasSession = completed.contains { cal.isDate($0.startedAt, inSameDayAs: checkDate) }
+            if hasSession {
+                streak += 1
+                checkDate = cal.date(byAdding: .day, value: -1, to: checkDate) ?? checkDate
+            } else {
+                break
+            }
+        }
+        return streak
+    }
+
+    private var logoutButton: some View {
+        Button {
+            auth.logout()
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "rectangle.portrait.and.arrow.right")
+                Text("Log Out")
+            }
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(.red)
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
+            .background(Color.arkoCard)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
         }
     }
 
@@ -28,21 +68,16 @@ struct ProfileView: View {
         VStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.arkoTeal, .blue.opacity(0.8)],
-                            startPoint: .topLeading, endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(Color.arkoLime)
                     .frame(width: 80, height: 80)
-                Text("A")
+                Text(String(auth.displayName.prefix(1)).uppercased())
                     .font(.system(size: 34, weight: .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.black)
             }
 
-            Text(profile.name)
+            Text(auth.displayName)
                 .font(.title3.weight(.bold))
-            Text("ARKO Member")
+            Text(auth.email.isEmpty ? "ARKO Member" : auth.email)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -51,7 +86,7 @@ struct ProfileView: View {
                 Divider().frame(height: 30)
                 statBadge(value: profile.fitnessLevel.capitalized, label: "Level")
                 Divider().frame(height: 30)
-                statBadge(value: "4", label: "Day Streak")
+                statBadge(value: "\(currentStreak)", label: "Day Streak")
             }
             .arkoCard(padding: 16)
         }
@@ -144,8 +179,17 @@ struct ProfileView: View {
                 .padding(.bottom, 14)
 
             settingsRow(icon: "bell.fill", color: .orange, title: "Workout Reminders") {
-                Toggle("", isOn: $notificationsEnabled)
-                    .tint(Color.arkoTeal)
+                Toggle("", isOn: Binding(
+                    get: { notifications.isAuthorized },
+                    set: { enabled in
+                        if enabled {
+                            Task { await notifications.requestAuthorization() }
+                        } else {
+                            notifications.cancelAll()
+                        }
+                    }
+                ))
+                .tint(Color.arkoTeal)
             }
 
             Divider().padding(.vertical, 8)

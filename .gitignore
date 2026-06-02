@@ -19,3 +19,13 @@ DerivedData/
 GoogleService-Info.plist
 *.p12
 *.mobileprovision
+
+# Internal docs (lab discussion only)
+PROJECT_STATUS.md
+
+# Claude Code internal settings
+.claude/settings.local.json
+
+# Xcode user data
+arko-fitnesscoach.xcodeproj/xcuserdata/
+arko-fitnesscoach.xcodeproj/project.xcworkspace/xcuserdata/

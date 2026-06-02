@@ -26,8 +26,15 @@ if not os.getenv("GROQ_API_KEY"):
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from crew import run_health_insight_crew, run_form_feedback_crew
+from crew import (
+    run_health_insight_crew,
+    run_form_feedback_crew,
+    run_progress_insight_crew,
+    run_recommendation_narration,
+)
 from agents.apple_health_agent import mock_a2a_response
+from agents.healthy_agent import recommend_workout, generate_program
+from agents.ml_agent import generate_form_report
 from agent_card import APPLE_HEALTH_AGENT_CARD, UI_AGENT_CARD, QA_AGENT_CARD
 
 app = FastAPI(
@@ -68,6 +75,45 @@ class AgentResponse(BaseModel):
     success: bool
     data: str
     agent_used: str
+
+
+class RecommendationInput(BaseModel):
+    target_calories: float
+    active_energy_burned: float
+    available_minutes: int = 30
+    preferred_intensity: str = "moderate"  # easy | moderate | hard
+    recent_exercise_ids: list = []
+
+
+class FormEvent(BaseModel):
+    status: str          # good | not_deep | knee_alignment | not_visible | low_confidence
+    timestamp: float     # detik sejak workout dimulai
+
+
+class FormReportInput(BaseModel):
+    exercise: str = "Squat"
+    events: list[FormEvent]
+
+
+class ProgramInput(BaseModel):
+    goal: str = "build_muscle"   # build_muscle | lose_weight | strength | endurance
+    days_per_week: int = 4
+    minutes: int = 45
+
+
+class WorkoutSummaryInput(BaseModel):
+    total_workouts_7d: int = 0
+    total_minutes_7d: int = 0
+    total_calories_7d: int = 0
+    avg_session_minutes: int = 0
+    streak_days: int = 0
+    last_workout_days_ago: int = 0
+    muscles_trained: dict = {}   # e.g. {"chest": 2, "legs": 1, "back": 0}
+
+
+class ProgressInsightInput(BaseModel):
+    health: HealthData
+    workout_summary: WorkoutSummaryInput
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -149,6 +195,110 @@ async def workout_recommendation(data: HealthData):
             data=str(health_result),
             agent_used="HealthKitAgent → UIAgent → QAAgent",
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Workout Program (HealthyAgent) ────────────────────────────────────────────
+
+@app.post("/generate-program")
+async def workout_program(input: ProgramInput):
+    """
+    HealthyAgent generates a goal-based weekly workout program.
+    """
+    try:
+        program = generate_program(
+            goal=input.goal,
+            days_per_week=input.days_per_week,
+            minutes=input.minutes,
+        )
+        return UnicodeJSONResponse(content=program)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Form Report (MLAgent) ─────────────────────────────────────────────────────
+
+@app.post("/form-report")
+async def form_report(input: FormReportInput):
+    """
+    MLAgent aggregates form events from a workout session
+    into a structured report (Lesson 10).
+    """
+    try:
+        events_dicts = [{"status": e.status, "timestamp": e.timestamp} for e in input.events]
+        report = generate_form_report(events_dicts, exercise=input.exercise)
+        return UnicodeJSONResponse(content=report)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Workout Recommendation (HealthyAgent) ─────────────────────────────────────
+
+@app.post("/recommend-workout")
+async def workout_recommendation(input: RecommendationInput):
+    """
+    HealthyAgent: rule-based scoring (Lesson 9) + Groq LLM narration.
+    Returns structured plan enriched with a personalized ai_narration field.
+    """
+    try:
+        plan = recommend_workout(
+            target_calories=input.target_calories,
+            active_energy_burned=input.active_energy_burned,
+            available_minutes=input.available_minutes,
+            preferred_intensity=input.preferred_intensity,
+            recent_exercise_ids=input.recent_exercise_ids,
+        )
+        # LLM narrates WHY this plan fits the user today
+        health_ctx = {
+            "active_energy": input.active_energy_burned,
+            "calorie_goal": input.target_calories,
+            "steps": 0,
+            "streak_days": 0,
+        }
+        try:
+            narration = run_recommendation_narration(plan, health_ctx)
+            plan["ai_narration"] = narration
+        except Exception:
+            plan["ai_narration"] = None   # fallback: show plan without narration
+        return UnicodeJSONResponse(content=plan)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/progress-insight")
+async def progress_insight(input: ProgressInsightInput):
+    """
+    ProgressAgent + QAAgent: analyzes 7-day workout history + today's health data.
+    Returns personalized progress report with highlights and recovery status.
+    """
+    try:
+        health_dict   = input.health.model_dump()
+        summary_dict  = input.workout_summary.model_dump()
+        raw_result    = run_progress_insight_crew(health_dict, summary_dict)
+
+        # Parse JSON from LLM output — handle wrapped text gracefully
+        import json, re
+        result_str = str(raw_result)
+        json_match = re.search(r'\{.*\}', result_str, re.DOTALL)
+        if json_match:
+            parsed = json.loads(json_match.group())
+        else:
+            parsed = {
+                "summary": result_str[:300],
+                "highlights": [],
+                "next_recommendation": "",
+                "recovery_status": "good",
+            }
+
+        return UnicodeJSONResponse(content={
+            "success": True,
+            "summary": parsed.get("summary", ""),
+            "highlights": parsed.get("highlights", []),
+            "next_recommendation": parsed.get("next_recommendation", ""),
+            "recovery_status": parsed.get("recovery_status", "good"),
+            "agent_used": "ProgressAgent → QAAgent",
+        })
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

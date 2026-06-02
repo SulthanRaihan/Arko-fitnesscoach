@@ -13,7 +13,8 @@ struct ContentView: View {
                 HomeView().tag(0)
                 WorkoutsView().tag(1)
                 FormCheckView().tag(2)
-                ProfileView().tag(3)
+                StatsView().tag(3)
+                ProfileView().tag(4)
             }
             .ignoresSafeArea(edges: .bottom)
 
@@ -37,7 +38,8 @@ private struct ARKOTabBar: View {
         TabItem(icon: "house.fill", tag: 0),
         TabItem(icon: "squares.below.rectangle", tag: 1),
         TabItem(icon: "camera.fill", tag: 2),
-        TabItem(icon: "person.fill", tag: 3),
+        TabItem(icon: "chart.bar.fill", tag: 3),
+        TabItem(icon: "person.fill", tag: 4),
     ]
 
     var body: some View {
@@ -52,13 +54,13 @@ private struct ARKOTabBar: View {
                 } label: {
                     ZStack {
                         if selected == item.tag {
-                            RoundedRectangle(cornerRadius: 14)
-                                .fill(Color.white.opacity(0.18))
+                            Circle()
+                                .fill(Color.arkoLime)
                                 .frame(width: 48, height: 48)
                         }
                         Image(systemName: item.icon)
-                            .font(.system(size: 20, weight: selected == item.tag ? .semibold : .regular))
-                            .foregroundStyle(selected == item.tag ? .white : Color.white.opacity(0.45))
+                            .font(.system(size: 20, weight: selected == item.tag ? .bold : .regular))
+                            .foregroundStyle(selected == item.tag ? .black : Color.white.opacity(0.5))
                             .frame(width: 48, height: 48)
                     }
                 }
@@ -67,9 +69,13 @@ private struct ARKOTabBar: View {
         }
         .padding(.vertical, 10)
         .background(
-            RoundedRectangle(cornerRadius: 28)
-                .fill(Color.arkoTabBar)
-                .shadow(color: .black.opacity(0.25), radius: 24, y: 8)
+            RoundedRectangle(cornerRadius: 32)
+                .fill(Color.arkoCard)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 32)
+                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.4), radius: 24, y: 8)
         )
         .padding(.horizontal, 24)
         .padding(.bottom, 28)

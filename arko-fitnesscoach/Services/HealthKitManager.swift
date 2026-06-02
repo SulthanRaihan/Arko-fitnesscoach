@@ -2,6 +2,7 @@ import HealthKit
 import Foundation
 
 final class HealthKitManager: ObservableObject {
+    static let shared = HealthKitManager()
     private let store = HKHealthStore()
 
     @Published var activeEnergy: Double = 0

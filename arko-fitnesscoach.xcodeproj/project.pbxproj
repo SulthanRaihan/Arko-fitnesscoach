@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		EB21856B2FC869C200B387AC /* StatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB21856A2FC869C200B387AC /* StatsView.swift */; };
+		EB21856D2FC86F7300B387AC /* ProgramView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB21856C2FC86F7300B387AC /* ProgramView.swift */; };
 		EB2AFC6F2FB495590029C70F /* WorkoutSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB2AFC6D2FB495590029C70F /* WorkoutSession.swift */; };
 		EB2AFC702FB495590029C70F /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB2AFC6E2FB495590029C70F /* UserProfile.swift */; };
 		EB2AFC742FB495670029C70F /* ARKOAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB2AFC722FB495670029C70F /* ARKOAPIService.swift */; };
@@ -22,6 +24,29 @@
 		EB6B39382FAC3686007E1972 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6B39342FAC3686007E1972 /* ProfileView.swift */; };
 		EB6B39392FAC3686007E1972 /* WorkoutsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6B39352FAC3686007E1972 /* WorkoutsView.swift */; };
 		EB6B393A2FAC3686007E1972 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6B39362FAC3686007E1972 /* HomeView.swift */; };
+		EB749C712FCE96EE0079E8BB /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB749C6F2FCE96ED0079E8BB /* NotificationService.swift */; };
+		EB749C722FCE96EE0079E8BB /* WGERSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB749C702FCE96EE0079E8BB /* WGERSyncService.swift */; };
+		EB749C742FCEA87A0079E8BB /* MoveNetDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB749C732FCEA8790079E8BB /* MoveNetDetector.swift */; };
+		EB749C762FCEA8B20079E8BB /* MoveNetLightning.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = EB749C752FCEA8B20079E8BB /* MoveNetLightning.mlpackage */; };
+		EBAE2C562FC45C2200084F21 /* Workout.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBAE2C552FC45C2200084F21 /* Workout.swift */; };
+		EBAE2C582FC45C3200084F21 /* ExerciseLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBAE2C572FC45C3200084F21 /* ExerciseLibrary.swift */; };
+		EBAE2C5A2FC45C4F00084F21 /* WorkoutHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBAE2C592FC45C4F00084F21 /* WorkoutHistoryStore.swift */; };
+		EBAE2C5C2FC45C9000084F21 /* ActiveWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBAE2C5B2FC45C9000084F21 /* ActiveWorkoutView.swift */; };
+		EBBE3E462FC7DCD200FD6210 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = EBBE3E452FC7DCD200FD6210 /* GoogleService-Info.plist */; };
+		EBBE3E4A2FC7DF0600FD6210 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = EBBE3E492FC7DF0600FD6210 /* FirebaseAnalytics */; };
+		EBBE3E4C2FC7DF0600FD6210 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = EBBE3E4B2FC7DF0600FD6210 /* FirebaseAuth */; };
+		EBBE3E4E2FC7DF0600FD6210 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = EBBE3E4D2FC7DF0600FD6210 /* FirebaseFirestore */; };
+		EBBE3E502FC7DF0600FD6210 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = EBBE3E4F2FC7DF0600FD6210 /* FirebaseStorage */; };
+		EBBE3E532FC7DFAC00FD6210 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = EBBE3E522FC7DFAC00FD6210 /* GoogleSignIn */; };
+		EBBE3E552FC7E08B00FD6210 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBBE3E542FC7E08B00FD6210 /* AuthManager.swift */; };
+		EBBE3E572FC7E09500FD6210 /* SocialAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBBE3E562FC7E09400FD6210 /* SocialAuth.swift */; };
+		EBBE3E592FC7E11D00FD6210 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBBE3E582FC7E11C00FD6210 /* AuthView.swift */; };
+		EBFA8F0B2FCDAEF500586286 /* MuscleLogService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBFA8F092FCDAEF500586286 /* MuscleLogService.swift */; };
+		EBFA8F0C2FCDAEF500586286 /* FirestoreWorkoutHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBFA8F0A2FCDAEF500586286 /* FirestoreWorkoutHistoryStore.swift */; };
+		EBFA8F0E2FCDAF0600586286 /* BodyMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBFA8F0D2FCDAF0600586286 /* BodyMapView.swift */; };
+		EBFA8F112FCDB2BD00586286 /* ExerciseDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBFA8F0F2FCDB2BD00586286 /* ExerciseDetailView.swift */; };
+		EBFA8F122FCDB2BD00586286 /* WorkoutSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBFA8F102FCDB2BD00586286 /* WorkoutSummaryView.swift */; };
+		EBFA8F142FCDB2C700586286 /* WGERService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBFA8F132FCDB2C700586286 /* WGERService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -42,6 +67,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		EB21856A2FC869C200B387AC /* StatsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StatsView.swift; sourceTree = "<group>"; };
+		EB21856C2FC86F7300B387AC /* ProgramView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProgramView.swift; sourceTree = "<group>"; };
 		EB2AFC6D2FB495590029C70F /* WorkoutSession.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WorkoutSession.swift; sourceTree = "<group>"; };
 		EB2AFC6E2FB495590029C70F /* UserProfile.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
 		EB2AFC722FB495670029C70F /* ARKOAPIService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ARKOAPIService.swift; sourceTree = "<group>"; };
@@ -61,6 +88,25 @@
 		EB6B39342FAC3686007E1972 /* ProfileView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		EB6B39352FAC3686007E1972 /* WorkoutsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WorkoutsView.swift; sourceTree = "<group>"; };
 		EB6B39362FAC3686007E1972 /* HomeView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		EB749C6F2FCE96ED0079E8BB /* NotificationService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		EB749C702FCE96EE0079E8BB /* WGERSyncService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WGERSyncService.swift; sourceTree = "<group>"; };
+		EB749C732FCEA8790079E8BB /* MoveNetDetector.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MoveNetDetector.swift; sourceTree = "<group>"; };
+		EB749C752FCEA8B20079E8BB /* MoveNetLightning.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; name = MoveNetLightning.mlpackage; path = backend/MoveNetLightning.mlpackage; sourceTree = SOURCE_ROOT; };
+		EB9730222FBC263300E18C5D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		EBAE2C552FC45C2200084F21 /* Workout.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Workout.swift; sourceTree = "<group>"; };
+		EBAE2C572FC45C3200084F21 /* ExerciseLibrary.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ExerciseLibrary.swift; sourceTree = "<group>"; };
+		EBAE2C592FC45C4F00084F21 /* WorkoutHistoryStore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WorkoutHistoryStore.swift; sourceTree = "<group>"; };
+		EBAE2C5B2FC45C9000084F21 /* ActiveWorkoutView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ActiveWorkoutView.swift; sourceTree = "<group>"; };
+		EBBE3E452FC7DCD200FD6210 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		EBBE3E542FC7E08B00FD6210 /* AuthManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
+		EBBE3E562FC7E09400FD6210 /* SocialAuth.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SocialAuth.swift; sourceTree = "<group>"; };
+		EBBE3E582FC7E11C00FD6210 /* AuthView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = AuthView.swift; path = "arko-fitnesscoach/AuthView.swift"; sourceTree = SOURCE_ROOT; };
+		EBFA8F092FCDAEF500586286 /* MuscleLogService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MuscleLogService.swift; sourceTree = "<group>"; };
+		EBFA8F0A2FCDAEF500586286 /* FirestoreWorkoutHistoryStore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FirestoreWorkoutHistoryStore.swift; sourceTree = "<group>"; };
+		EBFA8F0D2FCDAF0600586286 /* BodyMapView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BodyMapView.swift; sourceTree = "<group>"; };
+		EBFA8F0F2FCDB2BD00586286 /* ExerciseDetailView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ExerciseDetailView.swift; sourceTree = "<group>"; };
+		EBFA8F102FCDB2BD00586286 /* WorkoutSummaryView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WorkoutSummaryView.swift; sourceTree = "<group>"; };
+		EBFA8F132FCDB2C700586286 /* WGERService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WGERService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -68,6 +114,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EBBE3E532FC7DFAC00FD6210 /* GoogleSignIn in Frameworks */,
+				EBBE3E4A2FC7DF0600FD6210 /* FirebaseAnalytics in Frameworks */,
+				EBBE3E502FC7DF0600FD6210 /* FirebaseStorage in Frameworks */,
+				EBBE3E4C2FC7DF0600FD6210 /* FirebaseAuth in Frameworks */,
+				EBBE3E4E2FC7DF0600FD6210 /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -91,6 +142,8 @@
 		EB2AFC6C2FB495590029C70F /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				EBAE2C552FC45C2200084F21 /* Workout.swift */,
+				EBAE2C572FC45C3200084F21 /* ExerciseLibrary.swift */,
 				EB2AFC6D2FB495590029C70F /* WorkoutSession.swift */,
 				EB2AFC6E2FB495590029C70F /* UserProfile.swift */,
 			);
@@ -101,7 +154,15 @@
 		EB2AFC712FB495670029C70F /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				EBBE3E562FC7E09400FD6210 /* SocialAuth.swift */,
+				EBFA8F0A2FCDAEF500586286 /* FirestoreWorkoutHistoryStore.swift */,
+				EBFA8F092FCDAEF500586286 /* MuscleLogService.swift */,
+				EBBE3E542FC7E08B00FD6210 /* AuthManager.swift */,
+				EBFA8F132FCDB2C700586286 /* WGERService.swift */,
+				EBAE2C592FC45C4F00084F21 /* WorkoutHistoryStore.swift */,
 				EB2AFC722FB495670029C70F /* ARKOAPIService.swift */,
+				EB749C6F2FCE96ED0079E8BB /* NotificationService.swift */,
+				EB749C702FCE96EE0079E8BB /* WGERSyncService.swift */,
 				EB2AFC732FB495670029C70F /* HealthKitManager.swift */,
 			);
 			name = Services;
@@ -111,6 +172,7 @@
 		EB6B38FD2FAC24A0007E1972 = {
 			isa = PBXGroup;
 			children = (
+				EBBE3E452FC7DCD200FD6210 /* GoogleService-Info.plist */,
 				EB2AFC712FB495670029C70F /* Services */,
 				EB2AFC6C2FB495590029C70F /* Models */,
 				EB6B39082FAC24A0007E1972 /* arko-fitnesscoach */,
@@ -133,10 +195,20 @@
 		EB6B39082FAC24A0007E1972 /* arko-fitnesscoach */ = {
 			isa = PBXGroup;
 			children = (
+				EB9730222FBC263300E18C5D /* Info.plist */,
+				EBBE3E582FC7E11C00FD6210 /* AuthView.swift */,
 				EB2AFC762FB495B40029C70F /* arko-fitnesscoach.entitlements */,
 				EB6B39092FAC24A0007E1972 /* arko_fitnesscoachApp.swift */,
+				EBAE2C5B2FC45C9000084F21 /* ActiveWorkoutView.swift */,
 				EB6B390B2FAC24A0007E1972 /* ContentView.swift */,
 				EB6B39332FAC3686007E1972 /* FormCheckView.swift */,
+				EBFA8F0F2FCDB2BD00586286 /* ExerciseDetailView.swift */,
+				EB749C732FCEA8790079E8BB /* MoveNetDetector.swift */,
+				EBFA8F102FCDB2BD00586286 /* WorkoutSummaryView.swift */,
+				EB749C752FCEA8B20079E8BB /* MoveNetLightning.mlpackage */,
+				EB21856C2FC86F7300B387AC /* ProgramView.swift */,
+				EB21856A2FC869C200B387AC /* StatsView.swift */,
+				EBFA8F0D2FCDAF0600586286 /* BodyMapView.swift */,
 				EB6B39362FAC3686007E1972 /* HomeView.swift */,
 				EB6B39342FAC3686007E1972 /* ProfileView.swift */,
 				EB6B39352FAC3686007E1972 /* WorkoutsView.swift */,
@@ -187,6 +259,13 @@
 			dependencies = (
 			);
 			name = "arko-fitnesscoach";
+			packageProductDependencies = (
+				EBBE3E492FC7DF0600FD6210 /* FirebaseAnalytics */,
+				EBBE3E4B2FC7DF0600FD6210 /* FirebaseAuth */,
+				EBBE3E4D2FC7DF0600FD6210 /* FirebaseFirestore */,
+				EBBE3E4F2FC7DF0600FD6210 /* FirebaseStorage */,
+				EBBE3E522FC7DFAC00FD6210 /* GoogleSignIn */,
+			);
 			productName = "arko-fitnesscoach";
 			productReference = EB6B39062FAC24A0007E1972 /* arko-fitnesscoach.app */;
 			productType = "com.apple.product-type.application";
@@ -259,6 +338,10 @@
 				Base,
 			);
 			mainGroup = EB6B38FD2FAC24A0007E1972;
+			packageReferences = (
+				EBBE3E482FC7DF0600FD6210 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				EBBE3E512FC7DFAC00FD6210 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+			);
 			productRefGroup = EB6B39072FAC24A0007E1972 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -276,6 +359,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				EB6B39112FAC24A4007E1972 /* Preview Assets.xcassets in Resources */,
+				EBBE3E462FC7DCD200FD6210 /* GoogleService-Info.plist in Resources */,
 				EB6B390E2FAC24A4007E1972 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -302,15 +386,34 @@
 			buildActionMask = 2147483647;
 			files = (
 				EB6B39382FAC3686007E1972 /* ProfileView.swift in Sources */,
+				EBFA8F142FCDB2C700586286 /* WGERService.swift in Sources */,
+				EB749C712FCE96EE0079E8BB /* NotificationService.swift in Sources */,
+				EB749C722FCE96EE0079E8BB /* WGERSyncService.swift in Sources */,
 				EB6B39392FAC3686007E1972 /* WorkoutsView.swift in Sources */,
+				EBAE2C5C2FC45C9000084F21 /* ActiveWorkoutView.swift in Sources */,
+				EBAE2C5A2FC45C4F00084F21 /* WorkoutHistoryStore.swift in Sources */,
+				EBBE3E552FC7E08B00FD6210 /* AuthManager.swift in Sources */,
+				EBFA8F0E2FCDAF0600586286 /* BodyMapView.swift in Sources */,
+				EB749C762FCEA8B20079E8BB /* MoveNetLightning.mlpackage in Sources */,
 				EB6B390C2FAC24A0007E1972 /* ContentView.swift in Sources */,
 				EB2AFC742FB495670029C70F /* ARKOAPIService.swift in Sources */,
 				EB6B393A2FAC3686007E1972 /* HomeView.swift in Sources */,
+				EBFA8F0C2FCDAEF500586286 /* FirestoreWorkoutHistoryStore.swift in Sources */,
+				EB21856B2FC869C200B387AC /* StatsView.swift in Sources */,
+				EBBE3E572FC7E09500FD6210 /* SocialAuth.swift in Sources */,
+				EB21856D2FC86F7300B387AC /* ProgramView.swift in Sources */,
+				EBAE2C582FC45C3200084F21 /* ExerciseLibrary.swift in Sources */,
 				EB2AFC702FB495590029C70F /* UserProfile.swift in Sources */,
+				EBFA8F0B2FCDAEF500586286 /* MuscleLogService.swift in Sources */,
+				EBFA8F112FCDB2BD00586286 /* ExerciseDetailView.swift in Sources */,
+				EB749C742FCEA87A0079E8BB /* MoveNetDetector.swift in Sources */,
+				EBAE2C562FC45C2200084F21 /* Workout.swift in Sources */,
 				EB6B39372FAC3686007E1972 /* FormCheckView.swift in Sources */,
 				EB2AFC6F2FB495590029C70F /* WorkoutSession.swift in Sources */,
+				EBBE3E592FC7E11D00FD6210 /* AuthView.swift in Sources */,
 				EB2AFC752FB495670029C70F /* HealthKitManager.swift in Sources */,
 				EB6B390A2FAC24A0007E1972 /* arko_fitnesscoachApp.swift in Sources */,
+				EBFA8F122FCDB2BD00586286 /* WorkoutSummaryView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -466,12 +569,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
 				CODE_SIGN_ENTITLEMENTS = "arko-fitnesscoach/arko-fitnesscoach.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"arko-fitnesscoach/Preview Content\"";
+				DEVELOPMENT_TEAM = AKWAN7LLB7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "arko-fitnesscoach/Info.plist";
+				INFOPLIST_KEY_NSCameraUsageDescription = "ARKO uses your camera to analyze exercise form in real-time.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "ARKO reads your activity data to personalize your fitness coaching.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -483,7 +590,8 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "cn.edu.njxzc.arko-fitnesscoach";
+				NEW_SETTING = "";
+				PRODUCT_BUNDLE_IDENTIFIER = com.sulthanraihan.arkofitness;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -496,12 +604,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
 				CODE_SIGN_ENTITLEMENTS = "arko-fitnesscoach/arko-fitnesscoach.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"arko-fitnesscoach/Preview Content\"";
+				DEVELOPMENT_TEAM = AKWAN7LLB7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "arko-fitnesscoach/Info.plist";
+				INFOPLIST_KEY_NSCameraUsageDescription = "ARKO uses your camera to analyze exercise form in real-time.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "ARKO reads your activity data to personalize your fitness coaching.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -513,7 +625,8 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "cn.edu.njxzc.arko-fitnesscoach";
+				NEW_SETTING = "";
+				PRODUCT_BUNDLE_IDENTIFIER = com.sulthanraihan.arkofitness;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -633,6 +746,53 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		EBBE3E482FC7DF0600FD6210 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 10.0.0;
+			};
+		};
+		EBBE3E512FC7DFAC00FD6210 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 7.1.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		EBBE3E492FC7DF0600FD6210 /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EBBE3E482FC7DF0600FD6210 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		EBBE3E4B2FC7DF0600FD6210 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EBBE3E482FC7DF0600FD6210 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		EBBE3E4D2FC7DF0600FD6210 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EBBE3E482FC7DF0600FD6210 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		EBBE3E4F2FC7DF0600FD6210 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EBBE3E482FC7DF0600FD6210 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+		EBBE3E522FC7DFAC00FD6210 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EBBE3E512FC7DFAC00FD6210 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = EB6B38FE2FAC24A0007E1972 /* Project object */;
 }

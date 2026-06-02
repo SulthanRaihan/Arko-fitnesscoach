@@ -12,6 +12,13 @@ Referensi pattern: https://medium.com/@kevin0108dsa/create-an-ai-workforce-with-
 import os
 from dotenv import load_dotenv
 from crewai import Agent, Task, Crew, Process, LLM
+from agents.progress_agent import (
+    create_progress_agent,
+    create_qa_agent as create_progress_qa_agent,
+    make_progress_task,
+    make_progress_qa_task,
+    make_recommendation_narration_task,
+)
 
 load_dotenv()
 
@@ -169,6 +176,38 @@ def run_form_feedback_crew(exercise: str, keypoints: list, user_level: str = "be
         verbose=True,
     )
     return crew.kickoff()
+
+
+# ── Progress Insight Pipeline ─────────────────────────────────────────────────
+
+def run_progress_insight_crew(health: dict, workout_summary: dict) -> str:
+    """Pipeline: ProgressAgent → QAAgent → personalized progress report."""
+    progress_agent = create_progress_agent()
+    qa             = create_progress_qa_agent()
+
+    progress_task = make_progress_task(progress_agent, health, workout_summary)
+    qa_task       = make_progress_qa_task(qa)
+
+    crew = Crew(
+        agents=[progress_agent, qa],
+        tasks=[progress_task, qa_task],
+        process=Process.sequential,
+        verbose=True,
+    )
+    return str(crew.kickoff())
+
+
+def run_recommendation_narration(plan: dict, health: dict) -> str:
+    """Single-agent task: HealthyAgent narrates why the rule-based plan fits today."""
+    narration_task = make_recommendation_narration_task(healthkit_agent, plan, health)
+
+    crew = Crew(
+        agents=[healthkit_agent],
+        tasks=[narration_task],
+        process=Process.sequential,
+        verbose=True,
+    )
+    return str(crew.kickoff()).strip()
 
 
 # ── Test Lokal ────────────────────────────────────────────────────────────────
