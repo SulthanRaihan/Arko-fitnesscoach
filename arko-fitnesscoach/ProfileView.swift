@@ -19,7 +19,7 @@ struct ProfileView: View {
                     logoutButton
                     Spacer(minLength: 100)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 24)
                 .padding(.top, 8)
             }
         }

@@ -33,7 +33,7 @@ def create_healthy_agent() -> Agent:
             "respect the user's energy level."
         ),
         llm=llm,
-        verbose=True,
+        verbose=False,
         allow_delegation=False,
     )
 

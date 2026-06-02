@@ -27,7 +27,7 @@ struct WorkoutSummaryView: View {
                     actionButtons
                     Spacer(minLength: 60)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 24)
                 .padding(.top, 36)
             }
         }

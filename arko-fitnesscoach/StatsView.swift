@@ -28,7 +28,7 @@ struct StatsView: View {
                     muscleGroupsCard
                     Spacer(minLength: 110)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 24)
                 .padding(.top, 8)
             }
         }
@@ -112,42 +112,58 @@ struct StatsView: View {
 
     private var monthlyChartCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Label("Activity — Last 30 Days", systemImage: "chart.line.uptrend.xyaxis")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Color.arkoLime)
+            HStack {
+                Label("Activity — Last 30 Days", systemImage: "chart.line.uptrend.xyaxis")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.arkoLime)
+                Spacer()
+                Text("\(monthSessions.count) workouts")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.arkoTextDim)
+            }
 
             Chart(monthlyData, id: \.day) { item in
-                if item.calories > 0 {
-                    BarMark(
+                // Area fill under line
+                AreaMark(
+                    x: .value("Day", item.day),
+                    y: .value("Sessions", item.sessions)
+                )
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [Color.arkoLime.opacity(0.3), Color.arkoLime.opacity(0.0)],
+                        startPoint: .top, endPoint: .bottom
+                    )
+                )
+                .interpolationMethod(.catmullRom)
+
+                // Line
+                LineMark(
+                    x: .value("Day", item.day),
+                    y: .value("Sessions", item.sessions)
+                )
+                .foregroundStyle(Color.arkoLime)
+                .lineStyle(StrokeStyle(lineWidth: 2.5))
+                .interpolationMethod(.catmullRom)
+
+                // Dot on workout days
+                if item.sessions > 0 {
+                    PointMark(
                         x: .value("Day", item.day),
-                        y: .value("Calories", item.calories)
+                        y: .value("Sessions", item.sessions)
                     )
-                    .foregroundStyle(
-                        item.isCurrentWeek
-                        ? Color.arkoLime.gradient
-                        : Color.arkoLime.opacity(0.35).gradient
-                    )
-                    .cornerRadius(3)
+                    .foregroundStyle(Color.arkoLime)
+                    .symbolSize(30)
                 }
             }
-            .frame(height: 120)
+            .frame(height: 110)
             .chartXAxis(.hidden)
             .chartYAxis {
-                AxisMarks(position: .leading) { _ in
+                AxisMarks(values: .automatic(desiredCount: 2)) { _ in
                     AxisGridLine().foregroundStyle(Color.white.opacity(0.06))
                     AxisValueLabel().foregroundStyle(Color.arkoTextDim)
                 }
             }
-
-            // Legend
-            HStack(spacing: 16) {
-                legendDot(Color.arkoLime, "This week")
-                legendDot(Color.arkoLime.opacity(0.35), "Earlier")
-                Spacer()
-                Text("\(monthSessions.count) sessions total")
-                    .font(.caption2)
-                    .foregroundStyle(Color.arkoTextDim)
-            }
+            .chartYScale(domain: 0...max(2, (monthlyData.map(\.sessions).max() ?? 1) + 1))
         }
         .arkoCard()
     }
@@ -427,20 +443,19 @@ struct StatsView: View {
         return historyStore.sessions.filter { $0.startedAt >= cutoff && $0.isCompleted }
     }
 
-    private struct MonthDayData { let day: Int; let calories: Int; let isCurrentWeek: Bool }
+    private struct MonthDayData { let day: Int; let sessions: Int; let isCurrentWeek: Bool }
 
     private var monthlyData: [MonthDayData] {
         let cal = Calendar.current
         let today = Date()
-        let weekAgo = cal.date(byAdding: .day, value: -7, to: today)!
         var buckets: [Int: Int] = [:]
         for session in monthSessions {
             let offset = cal.dateComponents([.day], from: session.startedAt, to: today).day ?? 0
-            let key = 30 - offset
-            buckets[key, default: 0] += Int(session.caloriesBurned ?? 0)
+            let key = 29 - offset
+            if key >= 0 { buckets[key, default: 0] += 1 }
         }
         return (0..<30).map { i in
-            MonthDayData(day: i, calories: buckets[i] ?? 0, isCurrentWeek: i >= 23)
+            MonthDayData(day: i, sessions: buckets[i] ?? 0, isCurrentWeek: i >= 23)
         }
     }
 }

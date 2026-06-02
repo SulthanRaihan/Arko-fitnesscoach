@@ -34,7 +34,7 @@ def create_apple_health_agent() -> Agent:
             "and the iOS SwiftUI frontend consume your output."
         ),
         llm=llm,
-        verbose=True,
+        verbose=False,
         allow_delegation=False,
     )
 

@@ -268,7 +268,9 @@ enum WorkoutTemplateLibrary {
             block("ex_pushup", sets: 2, reps: 12),
         ],
         icon: "figure.strengthtraining.traditional",
-        category: "Strength"
+        category: "Strength",
+        imageName: "tpl_pushday",
+        accentColor: "#E8513A"
     )
 
     // MARK: Pull Day
@@ -287,7 +289,9 @@ enum WorkoutTemplateLibrary {
             block("ex_bicep_curl"),
         ],
         icon: "figure.strengthtraining.traditional",
-        category: "Strength"
+        category: "Strength",
+        imageName: "tpl_pullday",
+        accentColor: "#3A7BD5"
     )
 
     // MARK: Leg Day
@@ -306,7 +310,9 @@ enum WorkoutTemplateLibrary {
             block("ex_stretch_hamstring", sets: 1, reps: 1),
         ],
         icon: "figure.strengthtraining.functional",
-        category: "Strength"
+        category: "Strength",
+        imageName: "tpl_legday",
+        accentColor: "#9B59B6"
     )
 
     // MARK: Full Body
@@ -325,7 +331,9 @@ enum WorkoutTemplateLibrary {
             block("ex_plank", sets: 3, reps: 1),
         ],
         icon: "figure.mixed.cardio",
-        category: "Strength"
+        category: "Strength",
+        imageName: "tpl_fullbody",
+        accentColor: "#27AE60"
     )
 
     // MARK: HIIT Cardio
@@ -345,7 +353,9 @@ enum WorkoutTemplateLibrary {
             cardioBlock("ex_burpee", durationMin: 1),
         ],
         icon: "flame.fill",
-        category: "Cardio"
+        category: "Cardio",
+        imageName: "tpl_hiit",
+        accentColor: "#F39C12"
     )
 
     // MARK: Mobility
@@ -364,6 +374,8 @@ enum WorkoutTemplateLibrary {
             cardioBlock("ex_foam_roll", durationMin: 5),
         ],
         icon: "figure.mind.and.body",
-        category: "Recovery"
+        category: "Recovery",
+        imageName: "tpl_recovery",
+        accentColor: "#1ABC9C"
     )
 }

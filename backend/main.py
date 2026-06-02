@@ -299,8 +299,58 @@ async def progress_insight(input: ProgressInsightInput):
             "recovery_status": parsed.get("recovery_status", "good"),
             "agent_used": "ProgressAgent → QAAgent",
         })
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        # LLM/network unavailable → rule-based local report so the app still works
+        return UnicodeJSONResponse(content=_local_progress_report(
+            input.health.model_dump(), input.workout_summary.model_dump()))
+
+
+def _local_progress_report(health: dict, summary: dict) -> dict:
+    """Rule-based progress report — runs without any LLM/network."""
+    workouts = summary.get("total_workouts_7d", 0)
+    minutes  = summary.get("total_minutes_7d", 0)
+    streak   = summary.get("streak_days", 0)
+    muscles  = summary.get("muscles_trained", {}) or {}
+    trained  = [m for m, c in muscles.items() if c > 0]
+    skipped  = [m for m, c in muscles.items() if c == 0]
+    sleep    = health.get("sleep_hours", 7)
+
+    if workouts == 0:
+        summary_text = "No workouts logged this week yet. Today is a great day to start — even a short session builds momentum."
+    else:
+        summary_text = (f"You completed {workouts} workout(s) this week for {minutes} active minutes, "
+                        f"with a {streak}-day streak. Keep the consistency going!")
+
+    highlights = []
+    if streak >= 2:
+        highlights.append(f"{streak}-day streak — consistency is your superpower.")
+    if trained:
+        highlights.append(f"Trained: {', '.join(t.capitalize() for t in trained[:3])}.")
+    if skipped:
+        highlights.append(f"Haven't hit {', '.join(s.capitalize() for s in skipped[:3])} this week.")
+    if not highlights:
+        highlights = ["Log your first workout to unlock personalized insights."]
+
+    if skipped:
+        next_rec = f"Schedule a session targeting {skipped[0].capitalize()} next to balance your training."
+    else:
+        next_rec = "Add a light recovery or mobility session to aid muscle repair."
+
+    if sleep < 6:
+        recovery = "tired"
+    elif streak >= 6:
+        recovery = "overtraining"
+    else:
+        recovery = "good"
+
+    return {
+        "success": True,
+        "summary": summary_text,
+        "highlights": highlights[:3],
+        "next_recommendation": next_rec,
+        "recovery_status": recovery,
+        "agent_used": "ProgressAgent (local fallback)",
+    }
 
 
 # ── A2A Endpoints ─────────────────────────────────────────────────────────────

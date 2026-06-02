@@ -28,6 +28,12 @@
 		EB749C722FCE96EE0079E8BB /* WGERSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB749C702FCE96EE0079E8BB /* WGERSyncService.swift */; };
 		EB749C742FCEA87A0079E8BB /* MoveNetDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB749C732FCEA8790079E8BB /* MoveNetDetector.swift */; };
 		EB749C762FCEA8B20079E8BB /* MoveNetLightning.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = EB749C752FCEA8B20079E8BB /* MoveNetLightning.mlpackage */; };
+		EB749C792FCEBC8F0079E8BB /* ToolsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB749C772FCEBC8C0079E8BB /* ToolsView.swift */; };
+		EB749C7A2FCEBC900079E8BB /* NutritionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB749C782FCEBC8E0079E8BB /* NutritionView.swift */; };
+		EB749C7C2FCEC5470079E8BB /* AnimatedGIFView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB749C7B2FCEC5460079E8BB /* AnimatedGIFView.swift */; };
+		EB749C7E2FCEC5580079E8BB /* ExerciseDBService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB749C7D2FCEC5580079E8BB /* ExerciseDBService.swift */; };
+		EB749C812FCECB180079E8BB /* MuscleBrowseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB749C7F2FCECB170079E8BB /* MuscleBrowseView.swift */; };
+		EB749C822FCECB180079E8BB /* MuscleMapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB749C802FCECB170079E8BB /* MuscleMapping.swift */; };
 		EBAE2C562FC45C2200084F21 /* Workout.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBAE2C552FC45C2200084F21 /* Workout.swift */; };
 		EBAE2C582FC45C3200084F21 /* ExerciseLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBAE2C572FC45C3200084F21 /* ExerciseLibrary.swift */; };
 		EBAE2C5A2FC45C4F00084F21 /* WorkoutHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBAE2C592FC45C4F00084F21 /* WorkoutHistoryStore.swift */; };
@@ -92,6 +98,12 @@
 		EB749C702FCE96EE0079E8BB /* WGERSyncService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WGERSyncService.swift; sourceTree = "<group>"; };
 		EB749C732FCEA8790079E8BB /* MoveNetDetector.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MoveNetDetector.swift; sourceTree = "<group>"; };
 		EB749C752FCEA8B20079E8BB /* MoveNetLightning.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; name = MoveNetLightning.mlpackage; path = backend/MoveNetLightning.mlpackage; sourceTree = SOURCE_ROOT; };
+		EB749C772FCEBC8C0079E8BB /* ToolsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ToolsView.swift; sourceTree = "<group>"; };
+		EB749C782FCEBC8E0079E8BB /* NutritionView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NutritionView.swift; sourceTree = "<group>"; };
+		EB749C7B2FCEC5460079E8BB /* AnimatedGIFView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnimatedGIFView.swift; sourceTree = "<group>"; };
+		EB749C7D2FCEC5580079E8BB /* ExerciseDBService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ExerciseDBService.swift; sourceTree = "<group>"; };
+		EB749C7F2FCECB170079E8BB /* MuscleBrowseView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MuscleBrowseView.swift; sourceTree = "<group>"; };
+		EB749C802FCECB170079E8BB /* MuscleMapping.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MuscleMapping.swift; sourceTree = "<group>"; };
 		EB9730222FBC263300E18C5D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		EBAE2C552FC45C2200084F21 /* Workout.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Workout.swift; sourceTree = "<group>"; };
 		EBAE2C572FC45C3200084F21 /* ExerciseLibrary.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ExerciseLibrary.swift; sourceTree = "<group>"; };
@@ -161,6 +173,7 @@
 				EBFA8F132FCDB2C700586286 /* WGERService.swift */,
 				EBAE2C592FC45C4F00084F21 /* WorkoutHistoryStore.swift */,
 				EB2AFC722FB495670029C70F /* ARKOAPIService.swift */,
+				EB749C7D2FCEC5580079E8BB /* ExerciseDBService.swift */,
 				EB749C6F2FCE96ED0079E8BB /* NotificationService.swift */,
 				EB749C702FCE96EE0079E8BB /* WGERSyncService.swift */,
 				EB2AFC732FB495670029C70F /* HealthKitManager.swift */,
@@ -204,6 +217,11 @@
 				EB6B39332FAC3686007E1972 /* FormCheckView.swift */,
 				EBFA8F0F2FCDB2BD00586286 /* ExerciseDetailView.swift */,
 				EB749C732FCEA8790079E8BB /* MoveNetDetector.swift */,
+				EB749C7B2FCEC5460079E8BB /* AnimatedGIFView.swift */,
+				EB749C782FCEBC8E0079E8BB /* NutritionView.swift */,
+				EB749C772FCEBC8C0079E8BB /* ToolsView.swift */,
+				EB749C7F2FCECB170079E8BB /* MuscleBrowseView.swift */,
+				EB749C802FCECB170079E8BB /* MuscleMapping.swift */,
 				EBFA8F102FCDB2BD00586286 /* WorkoutSummaryView.swift */,
 				EB749C752FCEA8B20079E8BB /* MoveNetLightning.mlpackage */,
 				EB21856C2FC86F7300B387AC /* ProgramView.swift */,
@@ -385,9 +403,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EB749C7A2FCEBC900079E8BB /* NutritionView.swift in Sources */,
 				EB6B39382FAC3686007E1972 /* ProfileView.swift in Sources */,
 				EBFA8F142FCDB2C700586286 /* WGERService.swift in Sources */,
 				EB749C712FCE96EE0079E8BB /* NotificationService.swift in Sources */,
+				EB749C7C2FCEC5470079E8BB /* AnimatedGIFView.swift in Sources */,
+				EB749C7E2FCEC5580079E8BB /* ExerciseDBService.swift in Sources */,
 				EB749C722FCE96EE0079E8BB /* WGERSyncService.swift in Sources */,
 				EB6B39392FAC3686007E1972 /* WorkoutsView.swift in Sources */,
 				EBAE2C5C2FC45C9000084F21 /* ActiveWorkoutView.swift in Sources */,
@@ -409,6 +430,9 @@
 				EB749C742FCEA87A0079E8BB /* MoveNetDetector.swift in Sources */,
 				EBAE2C562FC45C2200084F21 /* Workout.swift in Sources */,
 				EB6B39372FAC3686007E1972 /* FormCheckView.swift in Sources */,
+				EB749C822FCECB180079E8BB /* MuscleMapping.swift in Sources */,
+				EB749C812FCECB180079E8BB /* MuscleBrowseView.swift in Sources */,
+				EB749C792FCEBC8F0079E8BB /* ToolsView.swift in Sources */,
 				EB2AFC6F2FB495590029C70F /* WorkoutSession.swift in Sources */,
 				EBBE3E592FC7E11D00FD6210 /* AuthView.swift in Sources */,
 				EB2AFC752FB495670029C70F /* HealthKitManager.swift in Sources */,

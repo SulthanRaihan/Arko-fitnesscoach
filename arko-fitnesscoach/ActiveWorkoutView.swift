@@ -38,7 +38,7 @@ struct ActiveWorkoutView: View {
                         exerciseListSection
                         Spacer(minLength: 20)
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 24)
                     .padding(.top, 12)
                 }
                 bottomActionBar
@@ -128,7 +128,7 @@ struct ActiveWorkoutView: View {
             // placeholder symmetric
             Color.clear.frame(width: 36, height: 36)
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 24)
         .padding(.top, 16)
     }
 
@@ -155,7 +155,7 @@ struct ActiveWorkoutView: View {
             }
             .frame(height: 6)
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 24)
         .padding(.top, 14)
     }
 
@@ -335,7 +335,7 @@ struct ActiveWorkoutView: View {
                 }
             }
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 24)
         .padding(.vertical, 12)
         .background(.ultraThinMaterial)
     }

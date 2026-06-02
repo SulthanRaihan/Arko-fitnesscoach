@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "tpl_fullbody.jpg",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

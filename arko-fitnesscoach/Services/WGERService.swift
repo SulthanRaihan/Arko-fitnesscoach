@@ -70,35 +70,49 @@ actor WGERService {
     // MARK: - Private resolution
 
     private func resolveImageURL(name: String) async -> URL? {
-        // Step 1: search for the exercise to get base_id
-        guard let encoded = name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+        // Try several search terms — full name first, then individual words.
+        // Many WGER entries are named differently (e.g. "Fly" vs "Chest Fly").
+        let words = name.split(separator: " ").map(String.init)
+        var terms = [name]
+        if let first = words.first, first.lowercased() != name.lowercased() { terms.append(first) }
+        if let last = words.last, last != words.first { terms.append(last) }
+
+        for term in terms {
+            if let url = await firstImage(forTerm: term) { return url }
+        }
+        return nil
+    }
+
+    /// Search one term, scan ALL suggestions, return the first image found.
+    private func firstImage(forTerm term: String) async -> URL? {
+        guard let encoded = term.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
               let searchURL = URL(string: "\(baseURL)/api/v2/exercise/search/?term=\(encoded)&language=english&format=json")
         else { return nil }
 
         guard let (data, _) = try? await session.data(from: searchURL),
-              let searchResult = try? JSONDecoder().decode(WGERSearchResponse.self, from: data),
-              let first = searchResult.suggestions.first
+              let result = try? JSONDecoder().decode(WGERSearchResponse.self, from: data)
         else { return nil }
 
-        // Use thumbnail from search result if available
-        if let thumb = first.data.imageThumbnail ?? first.data.image,
-           let url = URL(string: thumb.hasPrefix("http") ? thumb : "\(baseURL)\(thumb)") {
-            return url
+        for suggestion in result.suggestions {
+            // Inline thumbnail?
+            if let thumb = suggestion.data.imageThumbnail ?? suggestion.data.image {
+                return URL(string: thumb.hasPrefix("http") ? thumb : "\(baseURL)\(thumb)")
+            }
+            // Otherwise look up images by base_id
+            if let url = await imageByBaseId(suggestion.data.baseId) {
+                return url
+            }
         }
+        return nil
+    }
 
-        // Step 2: fetch images by base_id
-        let baseId = first.data.baseId
-        guard let imgListURL = URL(string: "\(baseURL)/api/v2/exerciseimage/?format=json&exercise_base=\(baseId)") else { return nil }
-
-        guard let (imgData, _) = try? await session.data(from: imgListURL),
-              let imgList = try? JSONDecoder().decode(WGERImageListResponse.self, from: imgData)
+    private func imageByBaseId(_ baseId: Int) async -> URL? {
+        guard let url = URL(string: "\(baseURL)/api/v2/exerciseimage/?format=json&exercise_base=\(baseId)"),
+              let (data, _) = try? await session.data(from: url),
+              let list = try? JSONDecoder().decode(WGERImageListResponse.self, from: data)
         else { return nil }
-
-        // Prefer main image, fall back to first available
-        let chosen = imgList.results.first(where: { $0.isMain }) ?? imgList.results.first
-        guard let imgPath = chosen?.image else { return nil }
-
-        let fullPath = imgPath.hasPrefix("http") ? imgPath : "\(baseURL)\(imgPath)"
-        return URL(string: fullPath)
+        let chosen = list.results.first(where: { $0.isMain }) ?? list.results.first
+        guard let path = chosen?.image else { return nil }
+        return URL(string: path.hasPrefix("http") ? path : "\(baseURL)\(path)")
     }
 }

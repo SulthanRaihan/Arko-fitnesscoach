@@ -14,7 +14,8 @@ struct ContentView: View {
                 WorkoutsView().tag(1)
                 FormCheckView().tag(2)
                 StatsView().tag(3)
-                ProfileView().tag(4)
+                ToolsView().tag(4)
+                ProfileView().tag(5)
             }
             .ignoresSafeArea(edges: .bottom)
 
@@ -35,11 +36,12 @@ private struct ARKOTabBar: View {
     @Binding var selected: Int
 
     private let items: [TabItem] = [
-        TabItem(icon: "house.fill", tag: 0),
+        TabItem(icon: "house.fill",              tag: 0),
         TabItem(icon: "squares.below.rectangle", tag: 1),
-        TabItem(icon: "camera.fill", tag: 2),
-        TabItem(icon: "chart.bar.fill", tag: 3),
-        TabItem(icon: "person.fill", tag: 4),
+        TabItem(icon: "camera.fill",             tag: 2),
+        TabItem(icon: "chart.bar.fill",          tag: 3),
+        TabItem(icon: "wrench.and.screwdriver.fill", tag: 4),
+        TabItem(icon: "person.fill",             tag: 5),
     ]
 
     var body: some View {

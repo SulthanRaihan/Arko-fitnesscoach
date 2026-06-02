@@ -9,8 +9,11 @@ struct ExerciseDetailView: View {
     let exercise: Exercise
     @Environment(\.dismiss) private var dismiss
 
-    @State private var imageURL: URL?
-    @State private var imageLoaded = false
+    @State private var primaryRegions: [String: Date] = [:]
+    @State private var secondaryRegions: Set<String> = []
+    @State private var dbInstructions: [String] = []
+    @State private var musclesLoaded = false
+
 
     var body: some View {
         ZStack {
@@ -25,7 +28,7 @@ struct ExerciseDetailView: View {
                         muscleCard
                         Spacer(minLength: 60)
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 24)
                     .padding(.top, 16)
                 }
             }
@@ -49,7 +52,6 @@ struct ExerciseDetailView: View {
             }
         }
         .ignoresSafeArea(edges: .top)
-        .task { await loadImage() }
     }
 
     // MARK: - Image header
@@ -64,30 +66,12 @@ struct ExerciseDetailView: View {
             )
             .frame(height: 280)
 
-            if let url = imageURL {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-                            .frame(height: 280)
-                            .clipped()
-                            .transition(.opacity)
-                    case .failure:
-                        exercisePlaceholder
-                    case .empty:
-                        ProgressView().tint(Color.arkoLime)
-                    @unknown default:
-                        exercisePlaceholder
-                    }
-                }
+            // ExerciseDB animated GIF (white bg since GIFs are on white)
+            ExerciseGIFView(exercise: exercise, resolution: 360)
+                .padding(20)
                 .frame(height: 280)
-            } else if imageLoaded {
-                exercisePlaceholder
-            } else {
-                ProgressView().tint(Color.arkoLime)
-            }
+                .frame(maxWidth: .infinity)
+                .background(Color.white)
 
             // Gradient overlay at bottom for title readability
             VStack {
@@ -101,17 +85,6 @@ struct ExerciseDetailView: View {
             }
         }
         .frame(height: 280)
-    }
-
-    private var exercisePlaceholder: some View {
-        VStack(spacing: 12) {
-            Image(systemName: exercise.icon)
-                .font(.system(size: 56))
-                .foregroundStyle(Color.arkoLime.opacity(0.6))
-            Text("No image available")
-                .font(.caption)
-                .foregroundStyle(Color.arkoTextDim)
-        }
     }
 
     // MARK: - Info card
@@ -190,18 +163,41 @@ struct ExerciseDetailView: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(Color.arkoLime)
 
-            BodyMapView(muscleLastTrained: [exercise.primaryMuscle.rawValue: Date()])
-                .frame(maxWidth: .infinity)
+            // Primary (full red) + secondary (dim orange) from ExerciseDB
+            BodyMapView(
+                muscleLastTrained: primaryRegions.isEmpty
+                    ? [exercise.primaryMuscle.rawValue: Date()]
+                    : primaryRegions,
+                secondary: secondaryRegions
+            )
+            .frame(maxWidth: .infinity)
+
+            // Legend for primary/secondary
+            HStack(spacing: 16) {
+                HStack(spacing: 5) {
+                    Circle().fill(.red.opacity(0.85)).frame(width: 8, height: 8)
+                    Text("Primary").font(.caption2).foregroundStyle(Color.arkoTextDim)
+                }
+                HStack(spacing: 5) {
+                    Circle().fill(.orange.opacity(0.35)).frame(width: 8, height: 8)
+                    Text("Secondary").font(.caption2).foregroundStyle(Color.arkoTextDim)
+                }
+            }
         }
         .arkoCard()
+        .task {
+            guard !musclesLoaded else { return }
+            musclesLoaded = true
+            if let result = await ExerciseDBService.shared.lookup(exercise.name) {
+                if let primary = MuscleMapping.region(for: result.target) {
+                    primaryRegions = [primary: Date()]
+                }
+                secondaryRegions = MuscleMapping.regions(for: result.secondaryMuscles)
+                    .subtracting(primaryRegions.keys)
+            }
+        }
     }
 
-    // MARK: - Data loading
-
-    private func loadImage() async {
-        imageURL = await WGERService.shared.imageURL(for: exercise.name)
-        imageLoaded = true
-    }
 }
 
 struct ExerciseDetailView_Previews: PreviewProvider {

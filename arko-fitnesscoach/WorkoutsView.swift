@@ -14,6 +14,7 @@ struct WorkoutsView: View {
     enum Tab: String, CaseIterable {
         case templates = "Templates"
         case library   = "Exercises"
+        case byMuscle  = "By Muscle"
         case history   = "History"
     }
 
@@ -24,17 +25,24 @@ struct WorkoutsView: View {
             VStack(spacing: 0) {
                 topBar
                 tabSegmented
-                ScrollView(showsIndicators: false) {
-                    Group {
-                        switch selectedTab {
-                        case .templates: templatesList
-                        case .library:   exerciseLibraryList
-                        case .history:   historyList
+                if selectedTab == .byMuscle {
+                    // MuscleBrowseView manages its own scrolling
+                    MuscleBrowseView()
+                        .padding(.top, 12)
+                } else {
+                    ScrollView(showsIndicators: false) {
+                        Group {
+                            switch selectedTab {
+                            case .templates: templatesList
+                            case .library:   exerciseLibraryList
+                            case .history:   historyList
+                            case .byMuscle:  EmptyView()
+                            }
                         }
+                        .padding(.horizontal, 24)
+                        .padding(.top, 12)
+                        .padding(.bottom, 100)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 12)
-                    .padding(.bottom, 100)
                 }
             }
         }
@@ -87,7 +95,7 @@ struct WorkoutsView: View {
                 .clipShape(Capsule())
             }
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 24)
         .padding(.top, 8)
         .padding(.bottom, 12)
     }
@@ -115,7 +123,7 @@ struct WorkoutsView: View {
         .padding(4)
         .background(Color.arkoCard)
         .clipShape(Capsule())
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 24)
     }
 
     // MARK: Templates List
@@ -143,13 +151,27 @@ struct WorkoutsView: View {
         }
     }
 
+    /// Build a quick single-exercise session (3 sets) for the Play button.
+    private func singleExerciseSession(_ ex: Exercise) -> WorkoutSession {
+        let isTimed = ex.type == .cardio || ex.type == .mobility || ex.type == .flexibility
+        let sets: [WorkoutSet] = (0..<3).map { _ in
+            isTimed ? WorkoutSet(durationSeconds: 60) : WorkoutSet(weight: nil, reps: 10)
+        }
+        let block = ExerciseBlock(exercise: ex, sets: sets, restSeconds: 60)
+        return WorkoutSession(name: ex.name, exercises: [block])
+    }
+
     private func sectionGroup(title: String, icon: String, exercises: [Exercise]) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Label(title, systemImage: icon)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(Color.arkoTeal)
             ForEach(exercises) { ex in
-                ExerciseRow(exercise: ex) { selectedExercise = ex }
+                ExerciseRow(
+                    exercise: ex,
+                    onTap:  { selectedExercise = ex },
+                    onPlay: { activeSession = singleExerciseSession(ex) }
+                )
             }
         }
     }
@@ -235,50 +257,160 @@ private struct TemplateCard: View {
     let template: WorkoutTemplate
     let onStart: () -> Void
 
+    private var accent: Color {
+        guard let hex = template.accentColor else { return Color.arkoTeal }
+        return Color(hex: hex) ?? Color.arkoTeal
+    }
+
     var body: some View {
         Button(action: onStart) {
-            HStack(spacing: 14) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(intensityColor(template.intensity).opacity(0.15))
-                        .frame(width: 50, height: 50)
-                    Image(systemName: template.icon)
-                        .font(.system(size: 22))
-                        .foregroundStyle(intensityColor(template.intensity))
+            ZStack(alignment: .bottomLeading) {
+                // Background: photo or gradient
+                if let imgName = template.imageName, UIImage(named: imgName) != nil {
+                    GeometryReader { geo in
+                        Image(imgName)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: geo.size.width, height: geo.size.height)
+                            .clipped()
+                    }
+                    .frame(height: 160)
+                    // Dark gradient overlay for readability
+                    LinearGradient(
+                        colors: [.clear, .black.opacity(0.75)],
+                        startPoint: .top, endPoint: .bottom
+                    )
+                    .frame(height: 160)
+                } else {
+                    // Fallback gradient card
+                    LinearGradient(
+                        colors: [accent.opacity(0.8), accent.opacity(0.4)],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    )
+                    .frame(height: 160)
+                    // Icon placeholder
+                    HStack {
+                        Spacer()
+                        Image(systemName: template.icon)
+                            .font(.system(size: 64))
+                            .foregroundStyle(.white.opacity(0.15))
+                            .padding(.trailing, 24)
+                            .padding(.top, 20)
+                    }
                 }
-                VStack(alignment: .leading, spacing: 4) {
+
+                // Content overlay
+                VStack(alignment: .leading, spacing: 6) {
+                    // Category badge
                     HStack(spacing: 6) {
-                        Text(template.name)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.primary)
-                        Text(template.category)
-                            .font(.caption2.weight(.medium))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.arkoTeal.opacity(0.12))
-                            .foregroundStyle(Color.arkoTeal)
+                        Text(template.category.uppercased())
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(accent)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(.black.opacity(0.45))
+                            .clipShape(Capsule())
+                        Spacer()
+                        // Intensity badge
+                        Text(template.intensity.label)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(intensityColor(template.intensity).opacity(0.7))
                             .clipShape(Capsule())
                     }
-                    Text("\(template.estimatedDurationMinutes) min · \(template.estimatedCalories) kcal · \(template.exercises.count) ex")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+
+                    Spacer()
+
+                    // Title + stats
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(template.name)
+                            .font(.title3.weight(.bold))
+                            .foregroundStyle(.white)
+
+                        HStack(spacing: 14) {
+                            statBadge(icon: "clock", text: "\(template.estimatedDurationMinutes) min")
+                            statBadge(icon: "flame.fill", text: "\(template.estimatedCalories) kcal")
+                            statBadge(icon: "dumbbell.fill", text: "\(template.exercises.count) exercises")
+                        }
+                    }
                 }
-                Spacer()
-                Image(systemName: "play.circle.fill")
-                    .font(.system(size: 26))
-                    .foregroundStyle(Color.arkoTeal)
+                .padding(14)
+                .frame(height: 160, alignment: .bottom)
+
+                // Play button
+                VStack {
+                    HStack {
+                        Spacer()
+                        Circle()
+                            .fill(.white.opacity(0.2))
+                            .frame(width: 42, height: 42)
+                            .overlay(
+                                Image(systemName: "play.fill")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundStyle(.white)
+                            )
+                            .padding(14)
+                    }
+                    Spacer()
+                }
+                .frame(height: 160)
             }
-            .arkoCard(padding: 14)
+            .frame(height: 160)
+            .clipShape(RoundedRectangle(cornerRadius: 20))
         }
         .buttonStyle(.plain)
     }
 
+    private func statBadge(icon: String, text: String) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: icon).font(.system(size: 10))
+            Text(text).font(.caption2.weight(.medium))
+        }
+        .foregroundStyle(.white.opacity(0.85))
+    }
+
     private func intensityColor(_ i: WorkoutIntensity) -> Color {
         switch i {
-        case .easy: return Color.arkoGreen
-        case .moderate: return Color.arkoTeal
-        case .hard: return .orange
+        case .easy:     return .green
+        case .moderate: return .orange
+        case .hard:     return .red
         }
+    }
+}
+
+// MARK: - Color hex extension
+
+extension Color {
+    init?(hex: String) {
+        var h = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        if h.hasPrefix("#") { h.removeFirst() }
+        guard h.count == 6, let val = UInt64(h, radix: 16) else { return nil }
+        self.init(
+            red:   Double((val >> 16) & 0xFF) / 255,
+            green: Double((val >>  8) & 0xFF) / 255,
+            blue:  Double( val        & 0xFF) / 255
+        )
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// MARK: - Exercise Thumbnail (WGER image with icon fallback + cache)
+// ════════════════════════════════════════════════════════════════════════════
+
+private struct ExerciseThumbnail: View {
+    let exercise: Exercise
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.white)
+            ExerciseGIFView(exercise: exercise, resolution: 180)
+                .padding(3)
+        }
+        .frame(width: 46, height: 46)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 }
 
@@ -289,42 +421,46 @@ private struct TemplateCard: View {
 private struct ExerciseRow: View {
     let exercise: Exercise
     var onTap: (() -> Void)? = nil
+    var onPlay: (() -> Void)? = nil
 
     var body: some View {
-        Button { onTap?() } label: {
-            HStack(spacing: 12) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color.arkoTeal.opacity(0.12))
-                        .frame(width: 38, height: 38)
-                    Image(systemName: exercise.icon)
-                        .font(.system(size: 16))
-                        .foregroundStyle(Color.arkoTeal)
-                }
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
-                        Text(exercise.name)
-                            .font(.subheadline.weight(.medium))
-                        if exercise.supportsFormCheck {
-                            Image(systemName: "camera.fill")
-                                .font(.caption2)
-                                .foregroundStyle(.orange)
+        HStack(spacing: 12) {
+            // Tappable area → detail
+            Button { onTap?() } label: {
+                HStack(spacing: 12) {
+                    ExerciseThumbnail(exercise: exercise)
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 6) {
+                            Text(exercise.name)
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(.primary)
+                            if exercise.supportsFormCheck {
+                                Image(systemName: "camera.fill")
+                                    .font(.caption2)
+                                    .foregroundStyle(.orange)
+                            }
                         }
+                        Text(exercise.primaryMuscle.rawValue.capitalized)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     }
-                    Text(exercise.primaryMuscle.rawValue.capitalized)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                if onTap != nil {
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .foregroundStyle(Color.arkoTextDim)
+                    Spacer()
                 }
             }
-            .arkoCard(padding: 10)
+            .buttonStyle(.plain)
+
+            // Play button → start single-exercise session
+            Button { onPlay?() } label: {
+                Image(systemName: "play.fill")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(.black)
+                    .frame(width: 34, height: 34)
+                    .background(Color.arkoLime)
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
+        .arkoCard(padding: 10)
     }
 }
 

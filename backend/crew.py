@@ -50,7 +50,7 @@ ui_agent = Agent(
         "tailored to the user's fitness level."
     ),
     llm=make_llm(temperature=0.3),
-    verbose=True,
+    verbose=False,
 )
 
 healthkit_agent = Agent(
@@ -67,7 +67,7 @@ healthkit_agent = Agent(
         "evidence-based, practical workout recommendations."
     ),
     llm=make_llm(temperature=0.2),
-    verbose=True,
+    verbose=False,
 )
 
 qa_agent = Agent(
@@ -84,7 +84,7 @@ qa_agent = Agent(
         "appropriate safety disclaimers. You are the last line of defense."
     ),
     llm=make_llm(temperature=0.1),
-    verbose=True,
+    verbose=False,
 )
 
 
@@ -159,7 +159,7 @@ def run_health_insight_crew(health_data: dict) -> str:
         agents=[healthkit_agent, qa_agent],
         tasks=[health_task, qa_task],
         process=Process.sequential,
-        verbose=True,
+        verbose=False,
     )
     return crew.kickoff()
 
@@ -173,7 +173,7 @@ def run_form_feedback_crew(exercise: str, keypoints: list, user_level: str = "be
         agents=[ui_agent, qa_agent],
         tasks=[form_task, qa_task],
         process=Process.sequential,
-        verbose=True,
+        verbose=False,
     )
     return crew.kickoff()
 
@@ -192,7 +192,7 @@ def run_progress_insight_crew(health: dict, workout_summary: dict) -> str:
         agents=[progress_agent, qa],
         tasks=[progress_task, qa_task],
         process=Process.sequential,
-        verbose=True,
+        verbose=False,
     )
     return str(crew.kickoff())
 
@@ -205,7 +205,7 @@ def run_recommendation_narration(plan: dict, health: dict) -> str:
         agents=[healthkit_agent],
         tasks=[narration_task],
         process=Process.sequential,
-        verbose=True,
+        verbose=False,
     )
     return str(crew.kickoff()).strip()
 

@@ -51,7 +51,7 @@ struct ProgramView: View {
                         }
                         Spacer(minLength: 30)
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 24)
                     .padding(.top, 8)
                 }
             }

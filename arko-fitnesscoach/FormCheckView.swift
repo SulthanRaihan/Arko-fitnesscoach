@@ -420,7 +420,7 @@ struct FormCheckView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            // Camera + Pose
+            // Full-screen camera feed
             if camera.isAuthorized {
                 ZStack {
                     CameraPreview(session: camera.session)
@@ -432,17 +432,17 @@ struct FormCheckView: View {
                 permissionView
             }
 
-            // UI overlays
+            // Top overlay — minimal, just title + controls
             VStack {
-                topBar
-                liveStatusBadge          // ← live form status (color-coded)
+                topBar.padding(.horizontal, 16).padding(.top, 8)
                 Spacer()
-                counterHUD
-                if let feedback = formFeedback { feedbackCard(feedback) }
-                Spacer()
-                bottomControls
             }
-            .padding()
+
+            // Bottom panel — frosted glass stats card
+            VStack {
+                Spacer()
+                bottomPanel
+            }
         }
         .task {
             if let preset = presetExercise { selectedExercise = preset }
@@ -470,6 +470,169 @@ struct FormCheckView: View {
                     }
                 }
             }
+        }
+    }
+
+    // MARK: - Bottom Panel (new clean design)
+
+    private var bottomPanel: some View {
+        VStack(spacing: 0) {
+            // Feedback banner (above panel)
+            if let feedback = formFeedback {
+                HStack(spacing: 8) {
+                    Image(systemName: "sparkles").foregroundStyle(.orange)
+                    Text(feedback)
+                        .font(.caption)
+                        .foregroundStyle(.white)
+                        .lineLimit(2)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+            }
+
+            // Main frosted panel
+            VStack(spacing: 16) {
+                // Exercise name + form status
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(selectedExercise)
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(.white)
+                        HStack(spacing: 6) {
+                            Circle().fill(statusColor(counter.formStatus)).frame(width: 7, height: 7)
+                            Text(counter.formStatus.label)
+                                .font(.caption)
+                                .foregroundStyle(.white.opacity(0.8))
+                        }
+                    }
+                    Spacer()
+                    // Rep counter — large + prominent
+                    HStack(alignment: .lastTextBaseline, spacing: 4) {
+                        Text("\(counter.count)")
+                            .font(.system(size: 52, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .contentTransition(.numericText())
+                        Text("reps")
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
+                }
+
+                // Angle + Stage pills
+                HStack(spacing: 10) {
+                    statPill(label: "Angle", value: "\(Int(counter.currentAngle))°", color: angleColor)
+                    statPill(label: "Stage", value: counter.stage.uppercased(),
+                             color: counter.stage == "up" ? Color.arkoGreen : .orange)
+                    Spacer()
+                    // Pose detected indicator
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(camera.moveNetPose != nil ? Color.arkoLime : .gray)
+                            .frame(width: 6, height: 6)
+                        Text(camera.moveNetPose != nil ? "Tracking" : "No pose")
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
+                }
+
+                // Action buttons
+                if isWorkoutMode {
+                    HStack(spacing: 10) {
+                        // Check Form
+                        Button {
+                            Task { await fetchFormFeedback() }
+                        } label: {
+                            HStack(spacing: 6) {
+                                if isLoadingFeedback {
+                                    ProgressView().tint(.white).scaleEffect(0.75)
+                                } else {
+                                    Image(systemName: "sparkles")
+                                }
+                                Text("AI Form Check")
+                            }
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity, minHeight: 46)
+                            .background(Color.white.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                        }
+                        .disabled(isLoadingFeedback || camera.moveNetPose == nil)
+
+                        // Finish
+                        Button { Task { await finishAndReport() } } label: {
+                            HStack(spacing: 6) {
+                                if isLoadingReport {
+                                    ProgressView().tint(.black).scaleEffect(0.75)
+                                }
+                                Text("Done  \(counter.count)")
+                            }
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(.black)
+                            .frame(maxWidth: .infinity, minHeight: 46)
+                            .background(Color.arkoLime)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                        }
+                        .disabled(isLoadingReport)
+                    }
+                } else {
+                    // Exercise picker + reset + report
+                    VStack(spacing: 10) {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(exercises, id: \.self) { ex in
+                                    Button { selectedExercise = ex } label: {
+                                        Text(ex)
+                                            .font(.subheadline.weight(.medium))
+                                            .padding(.horizontal, 14)
+                                            .padding(.vertical, 8)
+                                            .background(selectedExercise == ex
+                                                        ? Color.arkoLime : Color.white.opacity(0.12))
+                                            .foregroundStyle(selectedExercise == ex ? .black : .white)
+                                            .clipShape(Capsule())
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                        HStack(spacing: 10) {
+                            Button { counter.reset() } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "arrow.counterclockwise")
+                                    Text("Reset")
+                                }
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                                .background(Color.white.opacity(0.12))
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                            }
+                            if counter.count > 0 {
+                                Button { Task { await finishAndReport() } } label: {
+                                    HStack(spacing: 6) {
+                                        if isLoadingReport { ProgressView().tint(.black).scaleEffect(0.75) }
+                                        Text("See Report")
+                                    }
+                                    .font(.subheadline.weight(.bold))
+                                    .foregroundStyle(.black)
+                                    .frame(maxWidth: .infinity, minHeight: 44)
+                                    .background(Color.arkoLime)
+                                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                                }
+                                .disabled(isLoadingReport)
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(20)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 28))
+            .padding(.horizontal, 12)
+            .padding(.bottom, isWorkoutMode ? 20 : 100)
         }
     }
 

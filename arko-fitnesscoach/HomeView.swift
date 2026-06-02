@@ -117,6 +117,7 @@ final class A2AHealthService {
 struct HomeView: View {
     @StateObject private var healthKit    = HealthKitManager.shared
     @StateObject private var historyStore = FirestoreWorkoutHistoryStore.shared
+    @ObservedObject private var auth      = AuthManager.shared
     @State private var profile = UserProfile.load()
 
     // A2A data from AppleHealthAgent
@@ -193,7 +194,7 @@ struct HomeView: View {
                     recommendationCard   // ← today's workout
                     Spacer(minLength: 110)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 24)
                 .padding(.top, 8)
             }
         }
@@ -549,25 +550,30 @@ struct HomeView: View {
 
     private var topBar: some View {
         HStack(spacing: 12) {
+            // Avatar
             ZStack {
-                Circle()
-                    .fill(Color.arkoLime)
-                    .frame(width: 44, height: 44)
-                Text("A").font(.system(size: 18, weight: .bold)).foregroundStyle(.black)
+                Circle().fill(Color.arkoLime).frame(width: 46, height: 46)
+                Text(String(auth.displayName.prefix(1)).uppercased())
+                    .font(.system(size: 19, weight: .bold))
+                    .foregroundStyle(.black)
             }
-            VStack(alignment: .leading, spacing: 1) {
-                Text(greetingText).font(.caption).foregroundStyle(Color.arkoTextDim)
-                Text("Ready to rock the day?")
-                    .font(.headline.weight(.bold))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(greetingText)
+                    .font(.caption)
+                    .foregroundStyle(Color.arkoTextDim)
+                Text("Hi, \(auth.displayName) 👋")
+                    .font(.title3.weight(.bold))
                     .foregroundStyle(.white)
             }
             Spacer()
-            Image(systemName: "bell.fill")
-                .font(.system(size: 16))
-                .foregroundStyle(.white)
-                .frame(width: 40, height: 40)
-                .background(Color.arkoCard)
-                .clipShape(Circle())
+            Button { Task { await fetchA2AData(); await fetchWorkoutPlan() } } label: {
+                Image(systemName: "arrow.clockwise")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 40, height: 40)
+                    .background(Color.arkoCard)
+                    .clipShape(Circle())
+            }
         }
     }
 
@@ -852,7 +858,7 @@ struct WorkoutPlanDetailView: View {
                         safetySection
                         sourceFooter
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 24)
                     .padding(.top, 8)
                     .padding(.bottom, 40)
                 }

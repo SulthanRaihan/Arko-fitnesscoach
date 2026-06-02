@@ -104,6 +104,8 @@ struct WorkoutTemplate: Codable, Identifiable, Hashable {
     var exercises: [ExerciseBlock]
     var icon: String           // SF Symbol
     var category: String       // "Strength", "Cardio", "Mixed"
+    var imageName: String?     // Asset name in Assets.xcassets (optional)
+    var accentColor: String?   // hex color for card gradient, e.g. "#FF6B35"
 }
 
 // ════════════════════════════════════════════════════════════════════════════

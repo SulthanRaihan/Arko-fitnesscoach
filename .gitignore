@@ -19,6 +19,8 @@ DerivedData/
 GoogleService-Info.plist
 *.p12
 *.mobileprovision
+Secrets.swift
+backend/MoveNetLightning.mlpackage/
 
 # Internal docs (lab discussion only)
 PROJECT_STATUS.md

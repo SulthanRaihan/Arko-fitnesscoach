@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "tpl_pushday.jpg",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

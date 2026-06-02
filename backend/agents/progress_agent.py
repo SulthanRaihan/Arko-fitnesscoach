@@ -34,7 +34,7 @@ def create_progress_agent() -> Agent:
             "and evidence-based. You never give vague advice."
         ),
         llm=_make_llm(temperature=0.4),
-        verbose=True,
+        verbose=False,
         allow_delegation=False,
     )
 
@@ -52,7 +52,7 @@ def create_qa_agent() -> Agent:
             "claims, and is suitable for general users."
         ),
         llm=_make_llm(temperature=0.1),
-        verbose=True,
+        verbose=False,
         allow_delegation=False,
     )
 
