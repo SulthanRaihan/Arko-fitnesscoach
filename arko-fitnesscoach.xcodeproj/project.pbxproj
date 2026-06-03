@@ -47,6 +47,8 @@
 		EBBE3E552FC7E08B00FD6210 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBBE3E542FC7E08B00FD6210 /* AuthManager.swift */; };
 		EBBE3E572FC7E09500FD6210 /* SocialAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBBE3E562FC7E09400FD6210 /* SocialAuth.swift */; };
 		EBBE3E592FC7E11D00FD6210 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBBE3E582FC7E11C00FD6210 /* AuthView.swift */; };
+		EBC9F2722FD02C9C008AA697 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBC9F2712FD02C9C008AA697 /* ChatView.swift */; };
+		EBC9F2742FD02D51008AA697 /* Secrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBC9F2732FD02D51008AA697 /* Secrets.swift */; };
 		EBFA8F0B2FCDAEF500586286 /* MuscleLogService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBFA8F092FCDAEF500586286 /* MuscleLogService.swift */; };
 		EBFA8F0C2FCDAEF500586286 /* FirestoreWorkoutHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBFA8F0A2FCDAEF500586286 /* FirestoreWorkoutHistoryStore.swift */; };
 		EBFA8F0E2FCDAF0600586286 /* BodyMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBFA8F0D2FCDAF0600586286 /* BodyMapView.swift */; };
@@ -113,6 +115,8 @@
 		EBBE3E542FC7E08B00FD6210 /* AuthManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
 		EBBE3E562FC7E09400FD6210 /* SocialAuth.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SocialAuth.swift; sourceTree = "<group>"; };
 		EBBE3E582FC7E11C00FD6210 /* AuthView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = AuthView.swift; path = "arko-fitnesscoach/AuthView.swift"; sourceTree = SOURCE_ROOT; };
+		EBC9F2712FD02C9C008AA697 /* ChatView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
+		EBC9F2732FD02D51008AA697 /* Secrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Secrets.swift; sourceTree = "<group>"; };
 		EBFA8F092FCDAEF500586286 /* MuscleLogService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MuscleLogService.swift; sourceTree = "<group>"; };
 		EBFA8F0A2FCDAEF500586286 /* FirestoreWorkoutHistoryStore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FirestoreWorkoutHistoryStore.swift; sourceTree = "<group>"; };
 		EBFA8F0D2FCDAF0600586286 /* BodyMapView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BodyMapView.swift; sourceTree = "<group>"; };
@@ -217,19 +221,21 @@
 				EB6B39332FAC3686007E1972 /* FormCheckView.swift */,
 				EBFA8F0F2FCDB2BD00586286 /* ExerciseDetailView.swift */,
 				EB749C732FCEA8790079E8BB /* MoveNetDetector.swift */,
+				EBC9F2712FD02C9C008AA697 /* ChatView.swift */,
 				EB749C7B2FCEC5460079E8BB /* AnimatedGIFView.swift */,
 				EB749C782FCEBC8E0079E8BB /* NutritionView.swift */,
 				EB749C772FCEBC8C0079E8BB /* ToolsView.swift */,
 				EB749C7F2FCECB170079E8BB /* MuscleBrowseView.swift */,
 				EB749C802FCECB170079E8BB /* MuscleMapping.swift */,
 				EBFA8F102FCDB2BD00586286 /* WorkoutSummaryView.swift */,
+				EB21856A2FC869C200B387AC /* StatsView.swift */,
 				EB749C752FCEA8B20079E8BB /* MoveNetLightning.mlpackage */,
 				EB21856C2FC86F7300B387AC /* ProgramView.swift */,
-				EB21856A2FC869C200B387AC /* StatsView.swift */,
 				EBFA8F0D2FCDAF0600586286 /* BodyMapView.swift */,
 				EB6B39362FAC3686007E1972 /* HomeView.swift */,
 				EB6B39342FAC3686007E1972 /* ProfileView.swift */,
 				EB6B39352FAC3686007E1972 /* WorkoutsView.swift */,
+				EBC9F2732FD02D51008AA697 /* Secrets.swift */,
 				EB6B390D2FAC24A4007E1972 /* Assets.xcassets */,
 				EB6B390F2FAC24A4007E1972 /* Preview Content */,
 			);
@@ -407,6 +413,7 @@
 				EB6B39382FAC3686007E1972 /* ProfileView.swift in Sources */,
 				EBFA8F142FCDB2C700586286 /* WGERService.swift in Sources */,
 				EB749C712FCE96EE0079E8BB /* NotificationService.swift in Sources */,
+				EBC9F2722FD02C9C008AA697 /* ChatView.swift in Sources */,
 				EB749C7C2FCEC5470079E8BB /* AnimatedGIFView.swift in Sources */,
 				EB749C7E2FCEC5580079E8BB /* ExerciseDBService.swift in Sources */,
 				EB749C722FCE96EE0079E8BB /* WGERSyncService.swift in Sources */,
@@ -423,6 +430,7 @@
 				EB21856B2FC869C200B387AC /* StatsView.swift in Sources */,
 				EBBE3E572FC7E09500FD6210 /* SocialAuth.swift in Sources */,
 				EB21856D2FC86F7300B387AC /* ProgramView.swift in Sources */,
+				EBC9F2742FD02D51008AA697 /* Secrets.swift in Sources */,
 				EBAE2C582FC45C3200084F21 /* ExerciseLibrary.swift in Sources */,
 				EB2AFC702FB495590029C70F /* UserProfile.swift in Sources */,
 				EBFA8F0B2FCDAEF500586286 /* MuscleLogService.swift in Sources */,

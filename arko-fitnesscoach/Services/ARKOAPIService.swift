@@ -284,6 +284,26 @@ final class ARKOAPIService {
         return try await post(path: "/progress-insight", body: body)
     }
 
+    // MARK: Chatbot (ARKO Coach)
+
+    func sendChat(
+        messages: [[String: String]],
+        context: [String: Any]
+    ) async throws -> String {
+        guard let url = URL(string: baseURL + "/chat") else { throw URLError(.badURL) }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try JSONSerialization.data(withJSONObject: [
+            "messages": messages,
+            "context": context
+        ])
+        req.timeoutInterval = 30
+        let (data, _) = try await URLSession.shared.data(for: req)
+        let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        return (obj?["reply"] as? String) ?? "Sorry, I couldn't respond right now."
+    }
+
     // MARK: Generic POST
 
     private func post<B: Encodable, R: Decodable>(path: String, body: B) async throws -> R {

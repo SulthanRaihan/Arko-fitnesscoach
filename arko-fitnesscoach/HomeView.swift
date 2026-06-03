@@ -131,6 +131,7 @@ struct HomeView: View {
     @State private var availableMinutes: Int = 30
     @State private var preferredIntensity: String = "moderate"
     @State private var showPlanDetail = false
+    @State private var showChat = false
 
     private var progress: Double {
         if let a2a = a2aCalories {
@@ -207,6 +208,9 @@ struct HomeView: View {
             if let plan = workoutPlan {
                 WorkoutPlanDetailView(plan: plan)
             }
+        }
+        .fullScreenCover(isPresented: $showChat) {
+            ChatView()
         }
         .refreshable {
             await healthKit.fetchAll()
@@ -566,6 +570,15 @@ struct HomeView: View {
                     .foregroundStyle(.white)
             }
             Spacer()
+            // ARKO Coach chatbot
+            Button { showChat = true } label: {
+                Image(systemName: "bubble.left.and.sparkles.fill")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.black)
+                    .frame(width: 40, height: 40)
+                    .background(Color.arkoLime)
+                    .clipShape(Circle())
+            }
             Button { Task { await fetchA2AData(); await fetchWorkoutPlan() } } label: {
                 Image(systemName: "arrow.clockwise")
                     .font(.system(size: 15, weight: .semibold))

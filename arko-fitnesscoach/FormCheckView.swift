@@ -6,38 +6,46 @@ import AVFoundation
 // ════════════════════════════════════════════════════════════════════════════
 
 struct ExerciseConfig {
+    enum Orientation { case vertical, horizontal }
+
     let name: String
     let downAngle: Double
     let upAngle: Double
     let jointA: MoveNetPose.Joint
     let jointB: MoveNetPose.Joint  // center (vertex of angle)
     let jointC: MoveNetPose.Joint
+    let orientation: Orientation   // expected body posture for a valid rep
 
     static let all: [String: ExerciseConfig] = [
         "Squat": ExerciseConfig(
             name: "Squat",
             downAngle: 110, upAngle: 160,
-            jointA: .rightHip, jointB: .rightKnee, jointC: .rightAnkle
+            jointA: .rightHip, jointB: .rightKnee, jointC: .rightAnkle,
+            orientation: .vertical
         ),
         "Push-up": ExerciseConfig(
             name: "Push-up",
             downAngle: 90, upAngle: 160,
-            jointA: .rightShoulder, jointB: .rightElbow, jointC: .rightWrist
+            jointA: .rightShoulder, jointB: .rightElbow, jointC: .rightWrist,
+            orientation: .horizontal
         ),
         "Deadlift": ExerciseConfig(
             name: "Deadlift",
             downAngle: 110, upAngle: 170,
-            jointA: .rightShoulder, jointB: .rightHip, jointC: .rightKnee
+            jointA: .rightShoulder, jointB: .rightHip, jointC: .rightKnee,
+            orientation: .vertical
         ),
         "Lunge": ExerciseConfig(
             name: "Lunge",
             downAngle: 100, upAngle: 160,
-            jointA: .rightHip, jointB: .rightKnee, jointC: .rightAnkle
+            jointA: .rightHip, jointB: .rightKnee, jointC: .rightAnkle,
+            orientation: .vertical
         ),
         "Plank": ExerciseConfig(
             name: "Plank",
             downAngle: 165, upAngle: 175,
-            jointA: .rightShoulder, jointB: .rightHip, jointC: .rightAnkle
+            jointA: .rightShoulder, jointB: .rightHip, jointC: .rightAnkle,
+            orientation: .horizontal
         ),
     ]
 }
@@ -53,14 +61,16 @@ enum FormStatus: String {
     case kneeAlignment  = "knee_alignment"
     case notVisible     = "not_visible"
     case lowConfidence  = "low_confidence"
+    case wrongPose      = "wrong_pose"
 
     var label: String {
         switch self {
         case .good:          return "Good form"
-        case .notDeep:       return "Squat deeper"
+        case .notDeep:       return "Go deeper"
         case .kneeAlignment: return "Knees out"
         case .notVisible:    return "Step into frame"
         case .lowConfidence: return "Improve lighting"
+        case .wrongPose:     return "Get into position"
         }
     }
 
@@ -71,6 +81,7 @@ enum FormStatus: String {
         case .kneeAlignment: return "orange"
         case .notVisible:    return "red"
         case .lowConfidence: return "red"
+        case .wrongPose:     return "orange"
         }
     }
 }
@@ -103,14 +114,31 @@ final class RepCounter: ObservableObject {
 
     /// Update dengan MoveNet pose. Hitung rep + analisis form.
     func update(pose: MoveNetPose, exercise: String) {
-        let analyzed = analyzeForm(pose: pose, exercise: exercise)
-        formStatus = analyzed
+        guard let config = ExerciseConfig.all[exercise] else { return }
 
-        guard let config = ExerciseConfig.all[exercise],
+        // GATE 1: orientasi tubuh harus sesuai exercise.
+        // (Squat = tubuh tegak, Push-up = tubuh horizontal, dst.)
+        // Ini mencegah gerakan salah ikut kehitung — MoveNet hanya kasih titik
+        // sendi, jadi kita yang verifikasi posturnya.
+        if !orientationMatches(pose: pose, expected: config.orientation) {
+            formStatus = .wrongPose
+            stage = "—"
+            return
+        }
+
+        // GATE 2: 3 sendi yang dipakai untuk sudut harus cukup terlihat.
+        let angleConf = pose.avgConfidence(for: [config.jointA, config.jointB, config.jointC])
+        guard angleConf >= 0.35,
               let a = pose.point(for: config.jointA),
               let b = pose.point(for: config.jointB),
               let c = pose.point(for: config.jointC)
-        else { return }
+        else {
+            formStatus = .notVisible
+            return
+        }
+
+        let analyzed = analyzeForm(pose: pose, exercise: exercise)
+        formStatus = analyzed
 
         let angle = calculateAngle(a: a, b: b, c: c)
         currentAngle = angle
@@ -128,6 +156,26 @@ final class RepCounter: ObservableObject {
             stage = "up"
         } else if angle < config.downAngle {
             stage = "down"
+        }
+    }
+
+    /// Cek orientasi torso (bahu→pinggul) cocok dengan yang diharapkan.
+    /// Hanya BLOKIR kalau jelas berlawanan, supaya rep sah tidak ikut terblokir.
+    private func orientationMatches(pose: MoveNetPose, expected: ExerciseConfig.Orientation) -> Bool {
+        guard let ls = pose.point(for: .leftShoulder),
+              let rs = pose.point(for: .rightShoulder),
+              let lh = pose.point(for: .leftHip),
+              let rh = pose.point(for: .rightHip)
+        else { return true }   // tidak cukup data → jangan blokir
+
+        let shoulder = CGPoint(x: (ls.x + rs.x) / 2, y: (ls.y + rs.y) / 2)
+        let hip      = CGPoint(x: (lh.x + rh.x) / 2, y: (lh.y + rh.y) / 2)
+        let dx = abs(shoulder.x - hip.x)
+        let dy = abs(shoulder.y - hip.y)
+
+        switch expected {
+        case .vertical:   return dy >= dx * 0.8   // blokir kalau jelas horizontal
+        case .horizontal: return dx >= dy * 0.8   // blokir kalau jelas vertikal
         }
     }
 
@@ -337,7 +385,7 @@ final class PreviewUIView: UIView {
 struct PoseOverlay: View {
     let pose: MoveNetPose?
 
-    // MoveNet joint connections
+    // Body bones only — NO face connections (eyes/ears jitter & look messy)
     private let connections: [(MoveNetPose.Joint, MoveNetPose.Joint)] = [
         (.leftShoulder, .leftElbow),   (.leftElbow, .leftWrist),
         (.rightShoulder, .rightElbow), (.rightElbow, .rightWrist),
@@ -346,11 +394,11 @@ struct PoseOverlay: View {
         (.leftHip, .rightHip),
         (.leftHip, .leftKnee),         (.leftKnee, .leftAnkle),
         (.rightHip, .rightKnee),       (.rightKnee, .rightAnkle),
-        (.nose, .leftEye),             (.nose, .rightEye),
     ]
 
+    // Body joint dots only — head drawn separately as a circle
     private let joints: [MoveNetPose.Joint] = [
-        .nose, .leftShoulder, .rightShoulder,
+        .leftShoulder, .rightShoulder,
         .leftElbow, .rightElbow, .leftWrist, .rightWrist,
         .leftHip, .rightHip, .leftKnee, .rightKnee,
         .leftAnkle, .rightAnkle,
@@ -360,6 +408,24 @@ struct PoseOverlay: View {
         GeometryReader { _ in
             Canvas { ctx, size in
                 guard let pose else { return }
+
+                // Neck + head: draw a clean circle at the nose, with a short
+                // neck line down to the shoulder midpoint.
+                if let nose = screenPt(pose.point(for: .nose), size: size) {
+                    let midShoulder = midpoint(pose.point(for: .leftShoulder),
+                                               pose.point(for: .rightShoulder), size: size)
+                    if let neck = midShoulder {
+                        var neckPath = Path()
+                        neckPath.move(to: nose); neckPath.addLine(to: neck)
+                        ctx.stroke(neckPath, with: .color(.orange),
+                                   style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    }
+                    let headR: CGFloat = 16
+                    let headRect = CGRect(x: nose.x - headR, y: nose.y - headR,
+                                          width: headR * 2, height: headR * 2)
+                    ctx.fill(Path(ellipseIn: headRect), with: .color(.orange.opacity(0.25)))
+                    ctx.stroke(Path(ellipseIn: headRect), with: .color(.orange), lineWidth: 3)
+                }
 
                 // Bones
                 for (a, b) in connections {
@@ -372,7 +438,7 @@ struct PoseOverlay: View {
                     }
                 }
 
-                // Joints
+                // Joint dots
                 for joint in joints {
                     if let p = screenPt(pose.point(for: joint), size: size) {
                         let r = CGRect(x: p.x-5, y: p.y-5, width: 10, height: 10)
@@ -382,6 +448,11 @@ struct PoseOverlay: View {
                 }
             }
         }
+    }
+
+    private func midpoint(_ p1: CGPoint?, _ p2: CGPoint?, size: CGSize) -> CGPoint? {
+        guard let a = screenPt(p1, size: size), let b = screenPt(p2, size: size) else { return nil }
+        return CGPoint(x: (a.x + b.x) / 2, y: (a.y + b.y) / 2)
     }
 
     // MoveNet origin = top-left, same as screen → no Y-flip needed

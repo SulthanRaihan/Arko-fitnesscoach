@@ -35,6 +35,7 @@ from crew import (
 from agents.apple_health_agent import mock_a2a_response
 from agents.healthy_agent import recommend_workout, generate_program
 from agents.ml_agent import generate_form_report
+from agents.chat_agent import chat_reply, local_fallback_reply
 from agent_card import APPLE_HEALTH_AGENT_CARD, UI_AGENT_CARD, QA_AGENT_CARD
 
 app = FastAPI(
@@ -351,6 +352,27 @@ def _local_progress_report(health: dict, summary: dict) -> dict:
         "recovery_status": recovery,
         "agent_used": "ProgressAgent (local fallback)",
     }
+
+
+# ── Chatbot (ARKO Coach) ──────────────────────────────────────────────────────
+
+class ChatMessage(BaseModel):
+    role: str       # "user" | "assistant"
+    content: str
+
+class ChatInput(BaseModel):
+    messages: list[ChatMessage]
+    context: dict = {}
+
+@app.post("/chat")
+async def chat(input: ChatInput):
+    """ARKO Coach — fitness/nutrition chatbot, context-aware, scope-guarded."""
+    msgs = [{"role": m.role, "content": m.content} for m in input.messages]
+    try:
+        reply = chat_reply(msgs, input.context)
+    except Exception:
+        reply = local_fallback_reply(msgs, input.context)  # Groq blocked → offline tip
+    return UnicodeJSONResponse(content={"reply": reply})
 
 
 # ── A2A Endpoints ─────────────────────────────────────────────────────────────
