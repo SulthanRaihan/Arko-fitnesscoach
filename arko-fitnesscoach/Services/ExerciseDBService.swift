@@ -98,45 +98,76 @@ actor ExerciseDBService {
 
     // MARK: - Private
 
-    private func resolve(name: String) async -> ExerciseDBResult? {
-        // Try full name, then individual words (ExerciseDB does substring match)
-        let words = name.lowercased()
-            .replacingOccurrences(of: "-", with: " ")
-            .split(separator: " ").map(String.init)
-        var terms = [name.lowercased()]
-        if let first = words.first { terms.append(first) }
-        if let last = words.last, last != words.first { terms.append(last) }
+    /// Search term yang lebih akurat untuk exercise lokal kita.
+    /// (ExerciseDB tidak punya nama "plain" jadi kita arahkan ke istilah yang
+    /// menghasilkan kandidat relevan, lalu scoring memilih yang paling cocok.)
+    private static let curatedTerm: [String: String] = [
+        "push-up": "push up", "bench press": "bench press", "chest fly": "dumbbell fly",
+        "pull-up": "pull-up", "deadlift": "deadlift", "bent-over row": "bent over row",
+        "squat": "squat", "lunge": "lunge", "leg press": "leg press",
+        "shoulder press": "shoulder press", "lateral raise": "lateral raise",
+        "bicep curl": "biceps curl", "tricep dip": "triceps dip",
+        "plank": "front plank", "sit-up": "sit up",
+        "running": "run", "jumping jacks": "jack", "burpee": "burpee",
+        "mountain climbers": "mountain climber",
+    ]
 
-        for term in terms {
-            if let hit = await search(term: term) { return hit }
+    private func resolve(name: String) async -> ExerciseDBResult? {
+        let lower = name.lowercased()
+        let term = Self.curatedTerm[lower] ?? lower
+
+        var candidates = await fetchCandidates(term)
+        if candidates.isEmpty {
+            // Fallback: kata per kata
+            let words = lower.replacingOccurrences(of: "-", with: " ")
+                .split(separator: " ").map(String.init)
+            for w in words where candidates.isEmpty {
+                candidates = await fetchCandidates(w)
+            }
         }
-        return nil
+        guard !candidates.isEmpty else { return nil }
+
+        // Pilih kandidat paling cocok dengan nama exercise kita
+        let queryTokens = tokenize(name)
+        let best = candidates.max { score($0, query: queryTokens) < score($1, query: queryTokens) }!
+
+        return ExerciseDBResult(
+            id: best.id, name: best.name, target: best.target,
+            bodyPart: best.bodyPart, equipment: best.equipment,
+            secondaryMuscles: best.secondaryMuscles ?? [],
+            instructions: best.instructions ?? []
+        )
     }
 
-    private func search(term: String) async -> ExerciseDBResult? {
+    private func fetchCandidates(_ term: String, limit: Int = 15) async -> [ExerciseDBRaw] {
         guard let encoded = term.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
-              let url = URL(string: "https://\(host)/exercises/name/\(encoded)?limit=5&offset=0")
-        else { return nil }
-
+              let url = URL(string: "https://\(host)/exercises/name/\(encoded)?limit=\(limit)&offset=0")
+        else { return [] }
         var req = URLRequest(url: url)
         req.setValue(apiKey, forHTTPHeaderField: "X-RapidAPI-Key")
         req.setValue(host,   forHTTPHeaderField: "X-RapidAPI-Host")
         req.timeoutInterval = 15
-
         guard let (data, _) = try? await URLSession.shared.data(for: req),
-              let raw = try? JSONDecoder().decode([ExerciseDBRaw].self, from: data),
-              let first = raw.first
-        else { return nil }
+              let raw = try? JSONDecoder().decode([ExerciseDBRaw].self, from: data)
+        else { return [] }
+        return raw
+    }
 
-        return ExerciseDBResult(
-            id: first.id,
-            name: first.name,
-            target: first.target,
-            bodyPart: first.bodyPart,
-            equipment: first.equipment,
-            secondaryMuscles: first.secondaryMuscles ?? [],
-            instructions: first.instructions ?? []
-        )
+    private func tokenize(_ s: String) -> Set<String> {
+        Set(s.lowercased()
+            .replacingOccurrences(of: "-", with: " ")
+            .split(separator: " ").map(String.init)
+            .filter { $0.count > 2 || $0 == "up" })
+    }
+
+    /// Skor: overlap token (utama) − jumlah kata (lebih pendek = lebih generik)
+    /// + bonus bodyweight (banyak exercise kita bodyweight).
+    private func score(_ raw: ExerciseDBRaw, query: Set<String>) -> Int {
+        let cTokens = tokenize(raw.name)
+        let overlap = query.intersection(cTokens).count
+        let wordCount = raw.name.split(separator: " ").count
+        let bodyweightBonus = raw.equipment.lowercased().contains("body weight") ? 2 : 0
+        return overlap * 10 - wordCount + bodyweightBonus
     }
 }
 

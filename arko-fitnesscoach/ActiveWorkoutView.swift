@@ -57,6 +57,8 @@ struct ActiveWorkoutView: View {
             if let block = currentBlock {
                 FormCheckView(
                     presetExercise: formCheckName(for: block.exercise),
+                    repTarget: block.sets.first(where: { !$0.completed })?.reps
+                               ?? block.sets.first?.reps,
                     onFinish: { reps in
                         applyFormCheckReps(reps, toBlock: currentExerciseIndex)
                     }

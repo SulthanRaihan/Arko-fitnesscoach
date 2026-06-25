@@ -15,6 +15,7 @@ private let exerciseGIFCache = NSCache<NSString, UIImage>()
 struct GIFCoreView: View {
     let cacheKey: String
     let fallbackIcon: String
+    var animated: Bool = true
     let requestProvider: () async -> URLRequest?
 
     @State private var image: UIImage?
@@ -24,7 +25,8 @@ struct GIFCoreView: View {
     var body: some View {
         ZStack {
             if let image {
-                GIFImageView(image: image)
+                // animated=false → tampilkan frame pertama saja (statis, ringan)
+                GIFImageView(image: animated ? image : (image.images?.first ?? image))
             } else if failed {
                 Image(systemName: fallbackIcon)
                     .font(.system(size: 36))
@@ -77,10 +79,12 @@ struct GIFCoreView: View {
 struct ExerciseGIFView: View {
     let exercise: Exercise
     var resolution: Int = 360
+    var animated: Bool = true
 
     var body: some View {
         GIFCoreView(cacheKey: "name:\(exercise.name.lowercased())",
-                    fallbackIcon: exercise.icon) {
+                    fallbackIcon: exercise.icon,
+                    animated: animated) {
             await ExerciseDBService.shared.gifRequest(for: exercise.name, resolution: resolution)
         }
     }

@@ -1,0 +1,30 @@
+                   
+                   
+┌─────────────────┐
+│ 3 Code Findings │
+└─────────────────┘
+                             
+  [36m[22m[24m  Dockerfile[0m
+   ❯❯❱ dockerfile.security.missing-user.missing-user
+          [31m[1m[24m❰❰ Blocking ❱❱[0m
+          By not specifying a USER, a program in the container may run as 'root'. This is a security hazard.
+          If an attacker can control a process running as root, they may have control over the container.   
+          Ensure that the last USER in a Dockerfile is a USER other than 'root'.                            
+          Details: https://sg.run/Gbvn                                                                      
+                                                                                                            
+           ▶▶┆ Autofix ▶ USER non-root CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+           12┆ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+                                     
+  [36m[22m[24m  convert_movenet.py[0m
+   ❯❯❱ python.lang.security.unverified-ssl-context.unverified-ssl-context
+          [31m[1m[24m❰❰ Blocking ❱❱[0m
+          Unverified SSL context detected. This will permit insecure connections without verifying SSL
+          certificates. Use 'ssl.create_default_context' instead.                                     
+          Details: https://sg.run/N4lp                                                                
+                                                                                                      
+           ▶▶┆ Autofix ▶ ssl._create_default_https_context = ssl.create_default_context
+           35┆ ssl._create_default_https_context = ssl._create_unverified_context
+            ⋮┆----------------------------------------
+           ▶▶┆ Autofix ▶ ssl.create_default_context()
+           39┆ context=ssl._create_unverified_context()
+

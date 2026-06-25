@@ -12,7 +12,7 @@ struct ContentView: View {
             TabView(selection: $selected) {
                 HomeView().tag(0)
                 WorkoutsView().tag(1)
-                FormCheckView().tag(2)
+                FormCheckTabView().tag(2)
                 StatsView().tag(3)
                 ToolsView().tag(4)
                 ProfileView().tag(5)

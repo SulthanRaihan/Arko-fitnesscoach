@@ -34,6 +34,7 @@
 		EB749C7E2FCEC5580079E8BB /* ExerciseDBService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB749C7D2FCEC5580079E8BB /* ExerciseDBService.swift */; };
 		EB749C812FCECB180079E8BB /* MuscleBrowseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB749C7F2FCECB170079E8BB /* MuscleBrowseView.swift */; };
 		EB749C822FCECB180079E8BB /* MuscleMapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB749C802FCECB170079E8BB /* MuscleMapping.swift */; };
+		EB8DE1D82FD986800028FB66 /* ARKOActionClassifier.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = EB8DE1D72FD986800028FB66 /* ARKOActionClassifier.mlmodel */; };
 		EBAE2C562FC45C2200084F21 /* Workout.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBAE2C552FC45C2200084F21 /* Workout.swift */; };
 		EBAE2C582FC45C3200084F21 /* ExerciseLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBAE2C572FC45C3200084F21 /* ExerciseLibrary.swift */; };
 		EBAE2C5A2FC45C4F00084F21 /* WorkoutHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBAE2C592FC45C4F00084F21 /* WorkoutHistoryStore.swift */; };
@@ -49,6 +50,10 @@
 		EBBE3E592FC7E11D00FD6210 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBBE3E582FC7E11C00FD6210 /* AuthView.swift */; };
 		EBC9F2722FD02C9C008AA697 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBC9F2712FD02C9C008AA697 /* ChatView.swift */; };
 		EBC9F2742FD02D51008AA697 /* Secrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBC9F2732FD02D51008AA697 /* Secrets.swift */; };
+		EBC9F2762FD05931008AA697 /* FormCheckFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBC9F2752FD05930008AA697 /* FormCheckFlow.swift */; };
+		EBEC28902FD68C9100D6B8BE /* VoiceCoach.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBEC288E2FD68C9100D6B8BE /* VoiceCoach.swift */; };
+		EBEC28912FD68C9100D6B8BE /* ActionClassifierService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBEC288F2FD68C9100D6B8BE /* ActionClassifierService.swift */; };
+		EBEC28932FD68CFF00D6B8BE /* VisionPose.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBEC28922FD68CFF00D6B8BE /* VisionPose.swift */; };
 		EBFA8F0B2FCDAEF500586286 /* MuscleLogService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBFA8F092FCDAEF500586286 /* MuscleLogService.swift */; };
 		EBFA8F0C2FCDAEF500586286 /* FirestoreWorkoutHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBFA8F0A2FCDAEF500586286 /* FirestoreWorkoutHistoryStore.swift */; };
 		EBFA8F0E2FCDAF0600586286 /* BodyMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBFA8F0D2FCDAF0600586286 /* BodyMapView.swift */; };
@@ -106,6 +111,7 @@
 		EB749C7D2FCEC5580079E8BB /* ExerciseDBService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ExerciseDBService.swift; sourceTree = "<group>"; };
 		EB749C7F2FCECB170079E8BB /* MuscleBrowseView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MuscleBrowseView.swift; sourceTree = "<group>"; };
 		EB749C802FCECB170079E8BB /* MuscleMapping.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MuscleMapping.swift; sourceTree = "<group>"; };
+		EB8DE1D72FD986800028FB66 /* ARKOActionClassifier.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = ARKOActionClassifier.mlmodel; sourceTree = "<group>"; };
 		EB9730222FBC263300E18C5D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		EBAE2C552FC45C2200084F21 /* Workout.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Workout.swift; sourceTree = "<group>"; };
 		EBAE2C572FC45C3200084F21 /* ExerciseLibrary.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ExerciseLibrary.swift; sourceTree = "<group>"; };
@@ -117,6 +123,10 @@
 		EBBE3E582FC7E11C00FD6210 /* AuthView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = AuthView.swift; path = "arko-fitnesscoach/AuthView.swift"; sourceTree = SOURCE_ROOT; };
 		EBC9F2712FD02C9C008AA697 /* ChatView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
 		EBC9F2732FD02D51008AA697 /* Secrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Secrets.swift; sourceTree = "<group>"; };
+		EBC9F2752FD05930008AA697 /* FormCheckFlow.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FormCheckFlow.swift; sourceTree = "<group>"; };
+		EBEC288E2FD68C9100D6B8BE /* VoiceCoach.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = VoiceCoach.swift; sourceTree = "<group>"; };
+		EBEC288F2FD68C9100D6B8BE /* ActionClassifierService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ActionClassifierService.swift; sourceTree = "<group>"; };
+		EBEC28922FD68CFF00D6B8BE /* VisionPose.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = VisionPose.swift; sourceTree = "<group>"; };
 		EBFA8F092FCDAEF500586286 /* MuscleLogService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MuscleLogService.swift; sourceTree = "<group>"; };
 		EBFA8F0A2FCDAEF500586286 /* FirestoreWorkoutHistoryStore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FirestoreWorkoutHistoryStore.swift; sourceTree = "<group>"; };
 		EBFA8F0D2FCDAF0600586286 /* BodyMapView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BodyMapView.swift; sourceTree = "<group>"; };
@@ -189,6 +199,7 @@
 		EB6B38FD2FAC24A0007E1972 = {
 			isa = PBXGroup;
 			children = (
+				EB8DE1D72FD986800028FB66 /* ARKOActionClassifier.mlmodel */,
 				EBBE3E452FC7DCD200FD6210 /* GoogleService-Info.plist */,
 				EB2AFC712FB495670029C70F /* Services */,
 				EB2AFC6C2FB495590029C70F /* Models */,
@@ -220,10 +231,14 @@
 				EB6B390B2FAC24A0007E1972 /* ContentView.swift */,
 				EB6B39332FAC3686007E1972 /* FormCheckView.swift */,
 				EBFA8F0F2FCDB2BD00586286 /* ExerciseDetailView.swift */,
+				EBEC288F2FD68C9100D6B8BE /* ActionClassifierService.swift */,
+				EBEC288E2FD68C9100D6B8BE /* VoiceCoach.swift */,
 				EB749C732FCEA8790079E8BB /* MoveNetDetector.swift */,
+				EBEC28922FD68CFF00D6B8BE /* VisionPose.swift */,
 				EBC9F2712FD02C9C008AA697 /* ChatView.swift */,
 				EB749C7B2FCEC5460079E8BB /* AnimatedGIFView.swift */,
 				EB749C782FCEBC8E0079E8BB /* NutritionView.swift */,
+				EBC9F2752FD05930008AA697 /* FormCheckFlow.swift */,
 				EB749C772FCEBC8C0079E8BB /* ToolsView.swift */,
 				EB749C7F2FCECB170079E8BB /* MuscleBrowseView.swift */,
 				EB749C802FCECB170079E8BB /* MuscleMapping.swift */,
@@ -411,6 +426,7 @@
 			files = (
 				EB749C7A2FCEBC900079E8BB /* NutritionView.swift in Sources */,
 				EB6B39382FAC3686007E1972 /* ProfileView.swift in Sources */,
+				EBEC28932FD68CFF00D6B8BE /* VisionPose.swift in Sources */,
 				EBFA8F142FCDB2C700586286 /* WGERService.swift in Sources */,
 				EB749C712FCE96EE0079E8BB /* NotificationService.swift in Sources */,
 				EBC9F2722FD02C9C008AA697 /* ChatView.swift in Sources */,
@@ -421,12 +437,16 @@
 				EBAE2C5C2FC45C9000084F21 /* ActiveWorkoutView.swift in Sources */,
 				EBAE2C5A2FC45C4F00084F21 /* WorkoutHistoryStore.swift in Sources */,
 				EBBE3E552FC7E08B00FD6210 /* AuthManager.swift in Sources */,
+				EBEC28912FD68C9100D6B8BE /* ActionClassifierService.swift in Sources */,
+				EBC9F2762FD05931008AA697 /* FormCheckFlow.swift in Sources */,
 				EBFA8F0E2FCDAF0600586286 /* BodyMapView.swift in Sources */,
+				EB8DE1D82FD986800028FB66 /* ARKOActionClassifier.mlmodel in Sources */,
 				EB749C762FCEA8B20079E8BB /* MoveNetLightning.mlpackage in Sources */,
 				EB6B390C2FAC24A0007E1972 /* ContentView.swift in Sources */,
 				EB2AFC742FB495670029C70F /* ARKOAPIService.swift in Sources */,
 				EB6B393A2FAC3686007E1972 /* HomeView.swift in Sources */,
 				EBFA8F0C2FCDAEF500586286 /* FirestoreWorkoutHistoryStore.swift in Sources */,
+				EBEC28902FD68C9100D6B8BE /* VoiceCoach.swift in Sources */,
 				EB21856B2FC869C200B387AC /* StatsView.swift in Sources */,
 				EBBE3E572FC7E09500FD6210 /* SocialAuth.swift in Sources */,
 				EB21856D2FC86F7300B387AC /* ProgramView.swift in Sources */,
@@ -606,7 +626,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"arko-fitnesscoach/Preview Content\"";
-				DEVELOPMENT_TEAM = AKWAN7LLB7;
+				DEVELOPMENT_TEAM = CT956VYJQ9;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "arko-fitnesscoach/Info.plist";
@@ -623,7 +643,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				NEW_SETTING = "";
-				PRODUCT_BUNDLE_IDENTIFIER = com.sulthanraihan.arkofitness;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sulthanraihan.arkofitness2025;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -641,7 +661,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"arko-fitnesscoach/Preview Content\"";
-				DEVELOPMENT_TEAM = AKWAN7LLB7;
+				DEVELOPMENT_TEAM = CT956VYJQ9;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "arko-fitnesscoach/Info.plist";
@@ -658,7 +678,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				NEW_SETTING = "";
-				PRODUCT_BUNDLE_IDENTIFIER = com.sulthanraihan.arkofitness;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sulthanraihan.arkofitness2025;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;

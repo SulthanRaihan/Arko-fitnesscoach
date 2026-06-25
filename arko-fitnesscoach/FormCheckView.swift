@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import Vision
 
 // ════════════════════════════════════════════════════════════════════════════
 // MARK: - Exercise Configuration (port dari Good-GYM exercises.json)
@@ -11,9 +12,9 @@ struct ExerciseConfig {
     let name: String
     let downAngle: Double
     let upAngle: Double
-    let jointA: MoveNetPose.Joint
-    let jointB: MoveNetPose.Joint  // center (vertex of angle)
-    let jointC: MoveNetPose.Joint
+    let jointA: BodyPose.Joint
+    let jointB: BodyPose.Joint  // center (vertex of angle)
+    let jointC: BodyPose.Joint
     let orientation: Orientation   // expected body posture for a valid rep
 
     static let all: [String: ExerciseConfig] = [
@@ -62,6 +63,7 @@ enum FormStatus: String {
     case notVisible     = "not_visible"
     case lowConfidence  = "low_confidence"
     case wrongPose      = "wrong_pose"
+    case straighten     = "straighten"
 
     var label: String {
         switch self {
@@ -71,6 +73,7 @@ enum FormStatus: String {
         case .notVisible:    return "Step into frame"
         case .lowConfidence: return "Improve lighting"
         case .wrongPose:     return "Get into position"
+        case .straighten:    return "Keep body straight"
         }
     }
 
@@ -82,6 +85,7 @@ enum FormStatus: String {
         case .notVisible:    return "red"
         case .lowConfidence: return "red"
         case .wrongPose:     return "orange"
+        case .straighten:    return "orange"
         }
     }
 }
@@ -96,72 +100,229 @@ final class RepCounter: ObservableObject {
     @Published var count: Int = 0
     @Published var currentAngle: Double = 0
     @Published var stage: String = "—"   // "up" / "down" / "—"
-    @Published var formStatus: FormStatus = .lowConfidence
+    /// Live status — HANYA untuk masalah posisi (notVisible / wrongPose).
+    /// Kualitas gerakan dinilai per-rep lewat `lastVerdict`.
+    @Published var formStatus: FormStatus = .good
     @Published var formEvents: [FormEvent] = []
+
+    /// Verdict rep terakhir (dinilai sekali saat rep selesai, bukan per-frame).
+    @Published var lastVerdict: FormStatus?
+    /// Bertambah tiap rep selesai — pemicu UI/voice walau verdict-nya sama.
+    @Published var verdictSeq: Int = 0
+
+    // Plank (time-based hold)
+    @Published var holdSeconds: Int = 0
+    private var holdAccumulated: TimeInterval = 0
+    private var holdResumeAt: Date?
 
     private var lastCountTime: TimeInterval = 0
     private let minRepInterval: TimeInterval = 0.5
     private var sessionStart = Date()
 
+    // Akumulator sinyal selama 1 rep (dinilai di finishRep)
+    private var repMinAngle: Double = 999        // sudut lutut terdalam
+    private var repDeepFrames: Int = 0           // frame dgn pinggul ≈/di bawah lutut (anti-noise)
+    private var repHipTracked = false            // apakah hip+knee terlacak selama rep
+    private var repMaxLeanDeg: Double = 0        // kemiringan torso maksimal di bottom region
+    private var repLeanProbSum: Double = 0       // voting model: prob "lean" sepanjang rep
+    private var repLeanProbN: Int = 0
+    private var repKneeCaving = false
+    private var downStreak = 0                   // frame beruntun di bawah threshold (debounce)
+
+    // Debounce supaya teguran posisi tidak nyasar sesaat
+    private var badOrientationSince: Date?
+    private var notVisibleSince: Date?
+
     func reset() {
         count = 0
         stage = "—"
         currentAngle = 0
-        formStatus = .lowConfidence
+        formStatus = .good
         formEvents = []
+        lastVerdict = nil
+        verdictSeq = 0
+        holdSeconds = 0
+        holdAccumulated = 0
+        holdResumeAt = nil
+        badOrientationSince = nil
+        notVisibleSince = nil
+        resetRepAccumulators()
         sessionStart = Date()
     }
 
-    /// Update dengan MoveNet pose. Hitung rep + analisis form.
-    func update(pose: MoveNetPose, exercise: String) {
+    private func resetRepAccumulators() {
+        repMinAngle = 999
+        repDeepFrames = 0
+        repHipTracked = false
+        repMaxLeanDeg = 0
+        repLeanProbSum = 0
+        repLeanProbN = 0
+        repKneeCaving = false
+        downStreak = 0
+    }
+
+    /// Update per-frame: kumpulkan sinyal DIAM-DIAM selama rep, lalu beri SATU
+    /// verdict saat rep selesai (finishRep). Tidak ada teguran di tengah gerakan.
+    func update(pose: BodyPose, exercise: String, action: ActionPrediction? = nil) {
         guard let config = ExerciseConfig.all[exercise] else { return }
 
-        // GATE 1: orientasi tubuh harus sesuai exercise.
-        // (Squat = tubuh tegak, Push-up = tubuh horizontal, dst.)
-        // Ini mencegah gerakan salah ikut kehitung — MoveNet hanya kasih titik
-        // sendi, jadi kita yang verifikasi posturnya.
-        if !orientationMatches(pose: pose, expected: config.orientation) {
-            formStatus = .wrongPose
-            stage = "—"
+        // Plank = isometric hold → timer + feedback postur, bukan reps.
+        if config.name == "Plank" {
+            updatePlank(pose: pose, config: config)
             return
         }
 
-        // GATE 2: 3 sendi yang dipakai untuk sudut harus cukup terlihat.
+        // GATE 1 — orientasi: HANYA dicek saat TIDAK sedang di tengah rep
+        // (saat squat dalam, badan wajar condong → jangan dituduh salah posisi).
+        // Harus salah terus ≥1 detik baru ditegur (anti teguran nyasar).
+        if stage != "down" {
+            if orientationMatches(pose: pose, expected: config.orientation) {
+                badOrientationSince = nil
+            } else {
+                if badOrientationSince == nil { badOrientationSince = Date() }
+                if Date().timeIntervalSince(badOrientationSince!) > 1.0 {
+                    setLive(.wrongPose)
+                    return
+                }
+            }
+        } else {
+            badOrientationSince = nil
+        }
+
+        // GATE 2 — visibility, debounced 0.8 detik.
         let angleConf = pose.avgConfidence(for: [config.jointA, config.jointB, config.jointC])
-        guard angleConf >= 0.35,
+        guard angleConf >= 0.3,
               let a = pose.point(for: config.jointA),
               let b = pose.point(for: config.jointB),
               let c = pose.point(for: config.jointC)
         else {
-            formStatus = .notVisible
+            if notVisibleSince == nil { notVisibleSince = Date() }
+            if Date().timeIntervalSince(notVisibleSince!) > 0.8 { setLive(.notVisible) }
             return
         }
-
-        let analyzed = analyzeForm(pose: pose, exercise: exercise)
-        formStatus = analyzed
+        notVisibleSince = nil
+        setLive(.good)   // posisi beres → bersihkan warning
 
         let angle = calculateAngle(a: a, b: b, c: c)
         currentAngle = angle
 
+        // ── Kumpulkan sinyal selama rep (tanpa menegur) ──────────────────────
+        repMinAngle = min(repMinAngle, angle)
+
+        if exercise == "Squat" {
+            // Depth klasik side-view: pinggul mencapai/melewati level lutut.
+            // Toleransi dinormalisasi panjang paha (scale-aware: jauh/dekat kamera
+            // sama ketatnya), dan harus BERTAHAN beberapa frame (anti noise 1-frame).
+            if let hip  = pose.point(for: .rightHip)  ?? pose.point(for: .leftHip),
+               let knee = pose.point(for: .rightKnee) ?? pose.point(for: .leftKnee) {
+                repHipTracked = true
+                let thigh = Double(hypot(hip.x - knee.x, hip.y - knee.y))
+                let tol = thigh * 0.15   // pinggul max 15% panjang paha di atas lutut ≈ paralel
+                if Double(hip.y - knee.y) >= -tol, angle < config.downAngle + 15 {
+                    repDeepFrames += 1
+                }
+            }
+            // Torso lean diukur konsisten hanya di bottom region (condong saat
+            // turun itu wajar; yang dinilai adalah kemiringan di titik bawah).
+            if angle < config.downAngle + 20, let lean = torsoLeanDegrees(pose: pose) {
+                repMaxLeanDeg = max(repMaxLeanDeg, lean)
+            }
+            // Knee caving hanya relevan di posisi bawah.
+            if angle < config.downAngle + 10, isKneeCaving(pose: pose) {
+                repKneeCaving = true
+            }
+            // Voting model: kumpulkan probabilitas "lean" sepanjang rep.
+            if let action {
+                let leanProb = action.probabilities
+                    .first { $0.key.lowercased().contains("lean") }?.value ?? 0
+                repLeanProbSum += Double(leanProb)
+                repLeanProbN += 1
+            }
+        }
+
+        // ── State machine rep ────────────────────────────────────────────────
         let now = Date().timeIntervalSince1970
         if angle > config.upAngle {
+            downStreak = 0
             if stage == "down" && (now - lastCountTime) > minRepInterval {
-                count += 1
+                finishRep(config: config, exercise: exercise)
                 lastCountTime = now
-                formEvents.append(FormEvent(
-                    status: analyzed,
-                    timestamp: Date().timeIntervalSince(sessionStart)
-                ))
             }
             stage = "up"
         } else if angle < config.downAngle {
-            stage = "down"
+            // Harus 2 frame beruntun di bawah threshold baru dianggap fase "down"
+            // (1 frame noise tidak memicu rep palsu).
+            downStreak += 1
+            if downStreak >= 2 { stage = "down" }
         }
+    }
+
+    /// Verdict SATU kali per rep — arbitrase geometri + voting model.
+    private func finishRep(config: ExerciseConfig, exercise: String) {
+        count += 1
+
+        var verdict: FormStatus = .good
+        if exercise == "Squat" {
+            let avgLeanProb = repLeanProbN > 0 ? repLeanProbSum / Double(repLeanProbN) : 0
+
+            // 1) DEPTH — geometri pegang keputusan penuh.
+            //    Kalau hip+knee terlacak: pinggul harus bertahan ≥3 frame di level
+            //    lutut (scale-aware) — bukan OR longgar yang bisa kecolongan noise.
+            //    Backup sudut HANYA kalau hip tidak terlacak, dan lebih ketat (≤90°).
+            let deepEnough: Bool
+            if repHipTracked {
+                deepEnough = repDeepFrames >= 3
+            } else {
+                deepEnough = repMinAngle <= config.downAngle - 20
+            }
+
+            // 2) TORSO LEAN — geometri + model voting (dua sumber):
+            //    >55° = jelas condong (geometri saja cukup);
+            //    40–55° + model rata-rata yakin lean → condong.
+            let leanGeometry = repMaxLeanDeg > 55
+            let leanHybrid   = repMaxLeanDeg > 40 && avgLeanProb > 0.5
+
+            if !deepEnough              { verdict = .notDeep }
+            else if leanGeometry || leanHybrid { verdict = .straighten }
+            else if repKneeCaving       { verdict = .kneeAlignment }
+        }
+
+        formEvents.append(FormEvent(
+            status: verdict,
+            timestamp: Date().timeIntervalSince(sessionStart)
+        ))
+        lastVerdict = verdict
+        verdictSeq += 1
+        resetRepAccumulators()
+    }
+
+    /// Kemiringan torso dari vertikal (0° = tegak, 90° = horizontal).
+    private func torsoLeanDegrees(pose: BodyPose) -> Double? {
+        guard let ls = pose.point(for: .leftShoulder),
+              let rs = pose.point(for: .rightShoulder),
+              let lh = pose.point(for: .leftHip),
+              let rh = pose.point(for: .rightHip) else { return nil }
+        let sh  = CGPoint(x: (ls.x + rs.x) / 2, y: (ls.y + rs.y) / 2)
+        let hip = CGPoint(x: (lh.x + rh.x) / 2, y: (lh.y + rh.y) / 2)
+        let dx = Double(abs(sh.x - hip.x))
+        let dy = Double(abs(sh.y - hip.y))
+        return atan2(dx, dy) * 180.0 / Double.pi
+    }
+
+    private func isKneeCaving(pose: BodyPose) -> Bool {
+        guard let lK = pose.point(for: .leftKnee),  let rK = pose.point(for: .rightKnee),
+              let lA = pose.point(for: .leftAnkle), let rA = pose.point(for: .rightAnkle)
+        else { return false }
+        return abs(lK.x - rK.x) < abs(lA.x - rA.x) * 0.55
+    }
+
+    private func setLive(_ s: FormStatus) {
+        if formStatus != s { formStatus = s }
     }
 
     /// Cek orientasi torso (bahu→pinggul) cocok dengan yang diharapkan.
     /// Hanya BLOKIR kalau jelas berlawanan, supaya rep sah tidak ikut terblokir.
-    private func orientationMatches(pose: MoveNetPose, expected: ExerciseConfig.Orientation) -> Bool {
+    private func orientationMatches(pose: BodyPose, expected: ExerciseConfig.Orientation) -> Bool {
         guard let ls = pose.point(for: .leftShoulder),
               let rs = pose.point(for: .rightShoulder),
               let lh = pose.point(for: .leftHip),
@@ -179,40 +340,55 @@ final class RepCounter: ObservableObject {
         }
     }
 
-    /// Rule-based form analyzer — works with MoveNet 17-joint output
-    private func analyzeForm(pose: MoveNetPose, exercise: String) -> FormStatus {
-        guard let config = ExerciseConfig.all[exercise] else { return .lowConfidence }
+    // MARK: Plank (hold timer + posture feedback)
 
-        let keyJoints: [MoveNetPose.Joint] = [config.jointA, config.jointB, config.jointC,
-                                               .leftHip, .rightHip]
-        let avgConf = pose.avgConfidence(for: keyJoints)
-
-        if avgConf < 0.2 { return .notVisible }
-        if avgConf < 0.35 { return .lowConfidence }
-
-        guard let a = pose.point(for: config.jointA),
-              let b = pose.point(for: config.jointB),
-              let c = pose.point(for: config.jointC) else { return .notVisible }
-
-        let angle = calculateAngle(a: a, b: b, c: c)
-
-        if exercise == "Squat" {
-            if let lKnee  = pose.point(for: .leftKnee),
-               let rKnee  = pose.point(for: .rightKnee),
-               let lAnkle = pose.point(for: .leftAnkle),
-               let rAnkle = pose.point(for: .rightAnkle) {
-                let kneeWidth  = abs(lKnee.x - rKnee.x)
-                let ankleWidth = abs(lAnkle.x - rAnkle.x)
-                if stage == "down" && kneeWidth < ankleWidth * 0.7 { return .kneeAlignment }
-            }
-            if stage == "down" && angle > config.downAngle + 25 { return .notDeep }
+    private func updatePlank(pose: BodyPose, config: ExerciseConfig) {
+        // Harus posisi horizontal (kalau squat/berdiri → tidak valid, timer pause)
+        guard orientationMatches(pose: pose, expected: .horizontal) else {
+            pauseHold(); formStatus = .wrongPose; return
         }
-        return .good
+        let conf = pose.avgConfidence(for: [config.jointA, config.jointB, config.jointC])
+        guard conf >= 0.35,
+              let a = pose.point(for: config.jointA),   // shoulder
+              let b = pose.point(for: config.jointB),   // hip
+              let c = pose.point(for: config.jointC)    // ankle
+        else { pauseHold(); formStatus = .notVisible; return }
+
+        // Sudut bahu-pinggul-pergelangan kaki: ~180° = badan lurus
+        let angle = calculateAngle(a: a, b: b, c: c)
+        currentAngle = angle
+
+        // Badan lurus (160–185) → hold valid. Di luar itu → pinggul turun/naik.
+        if angle >= 160 {
+            formStatus = .good
+            validHold()
+        } else {
+            formStatus = .straighten      // pinggul melorot / naik
+            validHold()                   // tetap dihitung waktunya, tapi diberi feedback
+        }
+        // Catat event tiap ~2 detik untuk report
+        if holdSeconds > 0 && holdSeconds % 2 == 0 {
+            formEvents.append(FormEvent(status: formStatus,
+                                        timestamp: Date().timeIntervalSince(sessionStart)))
+        }
     }
 
-    /// Extract keypoints for UIAgent — MoveNet version
-    static func extractKeypoints(from pose: MoveNetPose) -> [[String: Double]] {
-        let joints: [(String, MoveNetPose.Joint)] = [
+    private func validHold() {
+        if holdResumeAt == nil { holdResumeAt = Date() }
+        let live = Date().timeIntervalSince(holdResumeAt!)
+        holdSeconds = Int(holdAccumulated + live)
+    }
+
+    private func pauseHold() {
+        if let r = holdResumeAt {
+            holdAccumulated += Date().timeIntervalSince(r)
+            holdResumeAt = nil
+        }
+    }
+
+    /// Extract keypoints for UIAgent — Vision version
+    static func extractKeypoints(from pose: BodyPose) -> [[String: Double]] {
+        let joints: [(String, BodyPose.Joint)] = [
             ("left_shoulder",  .leftShoulder),  ("right_shoulder", .rightShoulder),
             ("left_elbow",     .leftElbow),     ("right_elbow",    .rightElbow),
             ("left_wrist",     .leftWrist),     ("right_wrist",    .rightWrist),
@@ -225,7 +401,7 @@ final class RepCounter: ObservableObject {
             return [
                 "joint_index": Double(idx),
                 "x": Double(p.x), "y": Double(p.y),
-                "confidence": Double(pose.keypoints[pair.1.rawValue].confidence)
+                "confidence": Double(pose.confidence(for: pair.1))
             ]
         }
     }
@@ -256,10 +432,15 @@ final class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputS
     private let videoQueue = DispatchQueue(label: "arko.camera.queue", qos: .userInteractive)
     private var currentCamera: AVCaptureDevice.Position = .front
 
-    // MoveNet replaces Apple Vision for pose detection
-    @Published var moveNetPose: MoveNetPose?
+    // Apple Vision body pose + optional Action Classifier
+    @Published var bodyPose: BodyPose?
+    @Published var actionLabel: String?
+    @Published var actionConfidence: Float = 0
+    @Published var actionProbs: [String: Float] = [:]
     @Published var isAuthorized = false
     @Published var errorMessage: String?
+
+    private let poseRequest = VNDetectHumanBodyPoseRequest()
 
     override init() {
         super.init()
@@ -341,16 +522,27 @@ final class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputS
         videoQueue.async { [weak self] in self?.session.stopRunning() }
     }
 
-    // MARK: MoveNet Pose Detection
+    // MARK: Vision Pose Detection + Action Classifier
 
     func captureOutput(_ output: AVCaptureOutput,
                        didOutput sampleBuffer: CMSampleBuffer,
                        from connection: AVCaptureConnection) {
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
 
-        if let pose = MoveNetDetector.shared.predict(pixelBuffer: pixelBuffer) {
-            DispatchQueue.main.async { [weak self] in
-                self?.moveNetPose = pose
+        let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .up, options: [:])
+        try? handler.perform([poseRequest])
+        guard let observation = poseRequest.results?.first else { return }
+
+        let pose = BodyPose(observation: observation)
+        // Feed window to the (optional) Create ML action classifier
+        let prediction = ActionClassifierService.shared.addFrame(observation)
+
+        DispatchQueue.main.async { [weak self] in
+            self?.bodyPose = pose
+            if let p = prediction {
+                self?.actionLabel = p.label
+                self?.actionConfidence = p.confidence
+                self?.actionProbs = p.probabilities
             }
         }
     }
@@ -383,10 +575,10 @@ final class PreviewUIView: UIView {
 // ════════════════════════════════════════════════════════════════════════════
 
 struct PoseOverlay: View {
-    let pose: MoveNetPose?
+    let pose: BodyPose?
 
     // Body bones only — NO face connections (eyes/ears jitter & look messy)
-    private let connections: [(MoveNetPose.Joint, MoveNetPose.Joint)] = [
+    private let connections: [(BodyPose.Joint, BodyPose.Joint)] = [
         (.leftShoulder, .leftElbow),   (.leftElbow, .leftWrist),
         (.rightShoulder, .rightElbow), (.rightElbow, .rightWrist),
         (.leftShoulder, .rightShoulder),
@@ -397,7 +589,7 @@ struct PoseOverlay: View {
     ]
 
     // Body joint dots only — head drawn separately as a circle
-    private let joints: [MoveNetPose.Joint] = [
+    private let joints: [BodyPose.Joint] = [
         .leftShoulder, .rightShoulder,
         .leftElbow, .rightElbow, .leftWrist, .rightWrist,
         .leftHip, .rightHip, .leftKnee, .rightKnee,
@@ -467,66 +659,106 @@ struct PoseOverlay: View {
 // ════════════════════════════════════════════════════════════════════════════
 
 struct FormCheckView: View {
-    // Mode 1 (tab): standalone, pilih exercise sendiri
-    // Mode 2 (workout): preset exercise + return rep count via onFinish
+    // presetExercise + onFinish → focused single-exercise camera (dari setup flow / workout)
     var presetExercise: String? = nil
+    var repTarget: Int? = nil          // target reps (atau detik untuk Plank)
     var onFinish: ((Int) -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
     @StateObject private var camera = CameraManager()
     @StateObject private var counter = RepCounter()
+    @StateObject private var voice = VoiceCoach()
     @State private var selectedExercise = "Squat"
-    @State private var lastPose: MoveNetPose?
+    @State private var lastPose: BodyPose?
     @State private var formFeedback: String?
     @State private var isLoadingFeedback = false
     @State private var report: FormReportResponse?
     @State private var showReport = false
     @State private var isLoadingReport = false
+    @State private var targetReached = false
 
     private let exercises = ["Squat", "Push-up", "Deadlift", "Lunge", "Plank"]
 
     private var isWorkoutMode: Bool { onFinish != nil }
 
+    // Progress value (reps or hold-seconds for plank)
+    private var progressValue: Int { isPlank ? counter.holdSeconds : counter.count }
+
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            // Full-screen camera feed
+            // Full-screen camera feed + skeleton
             if camera.isAuthorized {
                 ZStack {
-                    CameraPreview(session: camera.session)
-                        .ignoresSafeArea()
-                    PoseOverlay(pose: camera.moveNetPose)
-                        .ignoresSafeArea()
+                    CameraPreview(session: camera.session).ignoresSafeArea()
+                    PoseOverlay(pose: camera.bodyPose).ignoresSafeArea()
                 }
+                // subtle top gradient so controls are readable
+                LinearGradient(colors: [.black.opacity(0.55), .clear],
+                               startPoint: .top, endPoint: .center)
+                    .ignoresSafeArea().allowsHitTesting(false)
             } else {
                 permissionView
             }
 
-            // Top overlay — minimal, just title + controls
-            VStack {
-                topBar.padding(.horizontal, 16).padding(.top, 8)
+            VStack(spacing: 0) {
+                topBarNew
+                progressHeader
+                centerFeedback
+                    .padding(.top, 6)
+                    .animation(.spring(response: 0.3), value: counter.formStatus)
                 Spacer()
-            }
-
-            // Bottom panel — frosted glass stats card
-            VStack {
-                Spacer()
-                bottomPanel
+                confidenceBars
+                slimControls
             }
         }
         .task {
             if let preset = presetExercise { selectedExercise = preset }
             await camera.checkPermission()
         }
-        .onReceive(camera.$moveNetPose) { newPose in
+        .onReceive(camera.$bodyPose) { newPose in
             if let pose = newPose {
-                counter.update(pose: pose, exercise: selectedExercise)
+                let action = camera.actionLabel.map {
+                    ActionPrediction(label: $0,
+                                     confidence: camera.actionConfidence,
+                                     probabilities: camera.actionProbs)
+                }
+                counter.update(pose: pose, exercise: selectedExercise, action: action)
                 lastPose = pose
             }
         }
+        .onChange(of: counter.formStatus) { status in
+            // Live cue: masalah posisi (debounced), atau postur saat plank hold.
+            if status == .wrongPose || status == .notVisible
+                || (isPlank && status == .straighten) {
+                voice.cue(for: status)
+            }
+        }
+        .onChange(of: counter.verdictSeq) { _ in
+            // SATU verdict per rep → suara coach.
+            guard let v = counter.lastVerdict else { return }
+            if v == .good {
+                voice.say("\(counter.count)")          // coach menghitung rep bagus
+            } else if isPlank == false {
+                voice.say(verdictVoice(v))
+                let gen = UINotificationFeedbackGenerator()
+                gen.notificationOccurred(.warning)
+            }
+        }
+        .onChange(of: progressValue) { val in
+            if let target = repTarget, val >= target, !targetReached {
+                targetReached = true
+                let gen = UINotificationFeedbackGenerator()
+                gen.notificationOccurred(.success)
+                voice.say("Great job! Target reached.")
+            }
+        }
         .onChange(of: selectedExercise) { _ in
-            counter.reset()
+            counter.reset(); targetReached = false
+            ActionClassifierService.shared.reset()
+            camera.actionProbs = [:]; camera.actionLabel = nil
+            voice.reset()
         }
         .onDisappear {
             camera.stop()
@@ -536,7 +768,8 @@ struct FormCheckView: View {
                 FormReportView(report: report) {
                     showReport = false
                     if isWorkoutMode {
-                        onFinish?(counter.count)
+                        // Plank → kirim detik hold; lainnya → jumlah reps
+                        onFinish?(isPlank ? counter.holdSeconds : counter.count)
                         dismiss()
                     }
                 }
@@ -544,7 +777,275 @@ struct FormCheckView: View {
         }
     }
 
-    // MARK: - Bottom Panel (new clean design)
+    // MARK: - New camera overlay (clean, non-obstructive)
+
+    private var topBarNew: some View {
+        HStack {
+            Button { camera.stop(); dismiss() } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
+                    .frame(width: 38, height: 38).background(.ultraThinMaterial).clipShape(Circle())
+            }
+            Spacer()
+            Text(selectedExercise)
+                .font(.headline.weight(.bold)).foregroundStyle(.white)
+                .shadow(radius: 4)
+            Spacer()
+            // Voice coach toggle
+            Button { voice.enabled.toggle() } label: {
+                Image(systemName: voice.enabled ? "speaker.wave.2.fill" : "speaker.slash.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(voice.enabled ? .black : .white)
+                    .frame(width: 38, height: 38)
+                    .background(voice.enabled ? AnyShapeStyle(Color.arkoLime) : AnyShapeStyle(.ultraThinMaterial))
+                    .clipShape(Circle())
+            }
+            Button { camera.switchCamera() } label: {
+                Image(systemName: "arrow.triangle.2.circlepath.camera.fill")
+                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
+                    .frame(width: 38, height: 38).background(.ultraThinMaterial).clipShape(Circle())
+            }
+        }
+        .padding(.horizontal, 16).padding(.top, 8)
+    }
+
+    // Big rep/timer progress "8 / 15"
+    private var progressHeader: some View {
+        VStack(spacing: 2) {
+            HStack(alignment: .lastTextBaseline, spacing: 6) {
+                Text(isPlank ? timerText(progressValue) : "\(progressValue)")
+                    .font(.system(size: 56, weight: .heavy, design: .rounded))
+                    .foregroundStyle(targetReached ? Color.arkoLime : .white)
+                    .contentTransition(.numericText())
+                if let target = repTarget {
+                    Text(isPlank ? "/ \(timerText(target))" : "/ \(target)")
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+            }
+            .shadow(color: .black.opacity(0.6), radius: 6, y: 2)
+            Text(isPlank ? "hold" : "reps")
+                .font(.caption).foregroundStyle(.white.opacity(0.7))
+            if targetReached {
+                Text("Target reached! 🎉")
+                    .font(.caption.weight(.bold)).foregroundStyle(Color.arkoLime)
+            }
+        }
+        .padding(.top, 6)
+    }
+
+    // Feedback per-rep: warning posisi (live, debounced) ATAU verdict rep terakhir.
+    // Tidak ada lagi label flip-flop frame-by-frame di tengah gerakan.
+    @ViewBuilder private var centerFeedback: some View {
+        let live = counter.formStatus
+        if live == .wrongPose || live == .notVisible {
+            // Masalah posisi — card oranye/merah (sudah debounced ≥1 detik)
+            VStack(spacing: 6) {
+                Image(systemName: feedbackIcon(live))
+                    .font(.system(size: 30, weight: .bold))
+                Text(live.label)
+                    .font(.title3.weight(.bold))
+                    .multilineTextAlignment(.center)
+                if let hint = feedbackHint(live) {
+                    Text(hint).font(.caption).multilineTextAlignment(.center).opacity(0.9)
+                }
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 22).padding(.vertical, 16)
+            .frame(maxWidth: 300)
+            .background(statusColor(live).opacity(0.92))
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .shadow(color: .black.opacity(0.4), radius: 12, y: 4)
+            .transition(.scale.combined(with: .opacity))
+        } else if isPlank {
+            // Plank = hold → feedback live memang sesuai (bukan per-rep)
+            if live == .good {
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill")
+                    Text("Good form")
+                }
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(.black)
+                .padding(.horizontal, 16).padding(.vertical, 10)
+                .background(Color.arkoLime)
+                .clipShape(Capsule())
+            } else if live == .straighten {
+                VStack(spacing: 6) {
+                    Image(systemName: feedbackIcon(live))
+                        .font(.system(size: 30, weight: .bold))
+                    Text(live.label)
+                        .font(.title3.weight(.bold))
+                    Text("Keep hips level with shoulders")
+                        .font(.caption).opacity(0.9)
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 22).padding(.vertical, 16)
+                .background(statusColor(live).opacity(0.92))
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .shadow(color: .black.opacity(0.4), radius: 12, y: 4)
+            }
+        } else if let verdict = counter.lastVerdict {
+            if verdict == .good {
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill")
+                    Text("Good rep!")
+                }
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(.black)
+                .padding(.horizontal, 16).padding(.vertical, 10)
+                .background(Color.arkoLime)
+                .clipShape(Capsule())
+                .transition(.scale.combined(with: .opacity))
+                .id(counter.verdictSeq)   // re-animate tiap rep
+            } else {
+                VStack(spacing: 6) {
+                    Image(systemName: feedbackIcon(verdict))
+                        .font(.system(size: 30, weight: .bold))
+                    Text(verdictTitle(verdict))
+                        .font(.title3.weight(.bold))
+                        .multilineTextAlignment(.center)
+                    Text(verdictHint(verdict))
+                        .font(.caption).multilineTextAlignment(.center).opacity(0.9)
+                    Text("Rep \(counter.count)")
+                        .font(.caption2.weight(.semibold)).opacity(0.75)
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 22).padding(.vertical, 16)
+                .frame(maxWidth: 300)
+                .background(statusColor(verdict).opacity(0.92))
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .shadow(color: .black.opacity(0.4), radius: 12, y: 4)
+                .transition(.scale.combined(with: .opacity))
+                .id(counter.verdictSeq)
+            }
+        }
+    }
+
+    // MARK: Verdict copy (judul / saran / suara per jenis error)
+
+    private func verdictTitle(_ v: FormStatus) -> String {
+        switch v {
+        case .notDeep:       return "Too Shallow"
+        case .straighten:    return "Torso Leaning"
+        case .kneeAlignment: return "Knees Caving In"
+        default:             return v.label
+        }
+    }
+
+    private func verdictHint(_ v: FormStatus) -> String {
+        switch v {
+        case .notDeep:       return "Lower until your hips reach knee level"
+        case .straighten:    return "Keep your chest up and back straight"
+        case .kneeAlignment: return "Push your knees outward, over your toes"
+        default:             return ""
+        }
+    }
+
+    private func verdictVoice(_ v: FormStatus) -> String {
+        switch v {
+        case .notDeep:       return "Too shallow. Go deeper."
+        case .straighten:    return "Torso leaning. Keep your chest up."
+        case .kneeAlignment: return "Knees caving in. Push them out."
+        default:             return ""
+        }
+    }
+
+    private func feedbackIcon(_ s: FormStatus) -> String {
+        switch s {
+        case .notVisible:    return "figure.stand"
+        case .lowConfidence: return "light.max"
+        case .wrongPose:     return "arrow.triangle.2.circlepath"
+        case .notDeep:       return "arrow.down.circle"
+        case .kneeAlignment: return "arrow.left.and.right"
+        case .straighten:    return "ruler"
+        case .good:          return "checkmark.circle.fill"
+        }
+    }
+
+    private func feedbackHint(_ s: FormStatus) -> String? {
+        switch s {
+        case .notVisible:    return "Step back so your whole body is in frame"
+        case .lowConfidence: return "Move to a brighter spot"
+        case .wrongPose:     return "Get into the \(selectedExercise.lowercased()) position"
+        case .notDeep:       return "Lower a bit more for full range"
+        case .kneeAlignment: return "Push your knees outward"
+        case .straighten:    return "Keep hips level with shoulders"
+        case .good:          return nil
+        }
+    }
+
+    // Live confidence bars dari Action Classifier (per kelas) — bukti model jalan
+    @ViewBuilder private var confidenceBars: some View {
+        let probs = camera.actionProbs.filter { $0.key != "none" && $0.key != "other" }
+        if !probs.isEmpty {
+            VStack(spacing: 7) {
+                ForEach(probs.sorted { $0.value > $1.value }, id: \.key) { name, val in
+                    HStack(spacing: 8) {
+                        Text(FeedbackMapper.title(forLabel: name))
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(.white)
+                            .frame(width: 130, alignment: .leading)
+                            .lineLimit(1)
+                        GeometryReader { geo in
+                            ZStack(alignment: .leading) {
+                                Capsule().fill(Color.white.opacity(0.15))
+                                Capsule()
+                                    .fill(barColor(name))
+                                    .frame(width: geo.size.width * CGFloat(val))
+                                    .animation(.easeOut(duration: 0.2), value: val)
+                            }
+                        }
+                        .frame(height: 7)
+                        Text("\(Int(val * 100))%")
+                            .font(.caption2.weight(.bold).monospacedDigit())
+                            .foregroundStyle(.white)
+                            .frame(width: 38, alignment: .trailing)
+                    }
+                }
+            }
+            .padding(12)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .padding(.horizontal, 16)
+            .padding(.bottom, 8)
+        }
+    }
+
+    private func barColor(_ label: String) -> Color {
+        let l = label.lowercased()
+        if l.contains("correct") { return Color.arkoLime }
+        if l.contains("shallow") { return .orange }
+        return .red
+    }
+
+    // Slim bottom controls — feedback otomatis (tanpa tombol AI Check manual)
+    private var slimControls: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 10) {
+                Button { counter.reset(); targetReached = false } label: {
+                    Image(systemName: "arrow.counterclockwise")
+                        .font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
+                        .frame(width: 52, height: 50)
+                        .background(.ultraThinMaterial).clipShape(RoundedRectangle(cornerRadius: 16))
+                }
+
+                Button { Task { await finishAndReport() } } label: {
+                    HStack(spacing: 6) {
+                        if isLoadingReport { ProgressView().tint(.black).scaleEffect(0.8) }
+                        Text("Finish")
+                    }
+                    .font(.subheadline.weight(.bold)).foregroundStyle(.black)
+                    .frame(maxWidth: .infinity).frame(height: 50)
+                    .background(Color.arkoLime).clipShape(RoundedRectangle(cornerRadius: 16))
+                }
+                .disabled(isLoadingReport)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, isWorkoutMode ? 24 : 100)
+    }
+
+    // MARK: - Bottom Panel (legacy, unused)
 
     private var bottomPanel: some View {
         VStack(spacing: 0) {
@@ -581,30 +1082,44 @@ struct FormCheckView: View {
                         }
                     }
                     Spacer()
-                    // Rep counter — large + prominent
-                    HStack(alignment: .lastTextBaseline, spacing: 4) {
-                        Text("\(counter.count)")
-                            .font(.system(size: 52, weight: .bold, design: .rounded))
-                            .foregroundStyle(.white)
-                            .contentTransition(.numericText())
-                        Text("reps")
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.6))
+                    // Plank → hold timer | others → rep count
+                    if isPlank {
+                        HStack(alignment: .lastTextBaseline, spacing: 4) {
+                            Text(timerText(counter.holdSeconds))
+                                .font(.system(size: 46, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white)
+                                .monospacedDigit()
+                            Text("hold")
+                                .font(.subheadline)
+                                .foregroundStyle(.white.opacity(0.6))
+                        }
+                    } else {
+                        HStack(alignment: .lastTextBaseline, spacing: 4) {
+                            Text("\(counter.count)")
+                                .font(.system(size: 52, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white)
+                                .contentTransition(.numericText())
+                            Text("reps")
+                                .font(.subheadline)
+                                .foregroundStyle(.white.opacity(0.6))
+                        }
                     }
                 }
 
                 // Angle + Stage pills
                 HStack(spacing: 10) {
-                    statPill(label: "Angle", value: "\(Int(counter.currentAngle))°", color: angleColor)
-                    statPill(label: "Stage", value: counter.stage.uppercased(),
-                             color: counter.stage == "up" ? Color.arkoGreen : .orange)
+                    statPill(label: "Body Angle", value: "\(Int(counter.currentAngle))°", color: angleColor)
+                    if !isPlank {
+                        statPill(label: "Stage", value: counter.stage.uppercased(),
+                                 color: counter.stage == "up" ? Color.arkoGreen : .orange)
+                    }
                     Spacer()
                     // Pose detected indicator
                     HStack(spacing: 4) {
                         Circle()
-                            .fill(camera.moveNetPose != nil ? Color.arkoLime : .gray)
+                            .fill(camera.bodyPose != nil ? Color.arkoLime : .gray)
                             .frame(width: 6, height: 6)
-                        Text(camera.moveNetPose != nil ? "Tracking" : "No pose")
+                        Text(camera.bodyPose != nil ? "Tracking" : "No pose")
                             .font(.caption2)
                             .foregroundStyle(.white.opacity(0.6))
                     }
@@ -631,7 +1146,7 @@ struct FormCheckView: View {
                             .background(Color.white.opacity(0.12))
                             .clipShape(RoundedRectangle(cornerRadius: 14))
                         }
-                        .disabled(isLoadingFeedback || camera.moveNetPose == nil)
+                        .disabled(isLoadingFeedback || camera.bodyPose == nil)
 
                         // Finish
                         Button { Task { await finishAndReport() } } label: {
@@ -639,7 +1154,8 @@ struct FormCheckView: View {
                                 if isLoadingReport {
                                     ProgressView().tint(.black).scaleEffect(0.75)
                                 }
-                                Text("Done  \(counter.count)")
+                                Text(isPlank ? "Done  \(timerText(counter.holdSeconds))"
+                                             : "Done  \(counter.count)")
                             }
                             .font(.subheadline.weight(.bold))
                             .foregroundStyle(.black)
@@ -681,7 +1197,7 @@ struct FormCheckView: View {
                                 .background(Color.white.opacity(0.12))
                                 .clipShape(RoundedRectangle(cornerRadius: 14))
                             }
-                            if counter.count > 0 {
+                            if counter.count > 0 || counter.holdSeconds > 0 {
                                 Button { Task { await finishAndReport() } } label: {
                                     HStack(spacing: 6) {
                                         if isLoadingReport { ProgressView().tint(.black).scaleEffect(0.75) }
@@ -705,6 +1221,12 @@ struct FormCheckView: View {
             .padding(.horizontal, 12)
             .padding(.bottom, isWorkoutMode ? 20 : 100)
         }
+    }
+
+    private var isPlank: Bool { selectedExercise == "Plank" }
+
+    private func timerText(_ seconds: Int) -> String {
+        String(format: "%d:%02d", seconds / 60, seconds % 60)
     }
 
     // MARK: Live Status Badge
@@ -858,9 +1380,9 @@ struct FormCheckView: View {
             // Pose status
             HStack(spacing: 6) {
                 Circle()
-                    .fill(camera.moveNetPose != nil ? Color.arkoGreen : Color.orange)
+                    .fill(camera.bodyPose != nil ? Color.arkoGreen : Color.orange)
                     .frame(width: 8, height: 8)
-                Text(camera.moveNetPose != nil ? "Pose detected" : "Stand in frame")
+                Text(camera.bodyPose != nil ? "Pose detected" : "Stand in frame")
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.white)
             }
@@ -890,7 +1412,7 @@ struct FormCheckView: View {
                         .background(.ultraThinMaterial)
                         .clipShape(Capsule())
                     }
-                    .disabled(isLoadingFeedback || camera.moveNetPose == nil)
+                    .disabled(isLoadingFeedback || camera.bodyPose == nil)
 
                     Button {
                         Task { await finishAndReport() }
@@ -990,16 +1512,60 @@ struct FormCheckView: View {
     private func localReport() -> FormReportResponse {
         let total = counter.formEvents.count
         let good = counter.formEvents.filter { $0.status == .good }.count
-        let pct = total > 0 ? Double(good) / Double(total) * 100 : 0
+        let pct = total > 0 ? Double(good) / Double(total) * 100 : (isPlank ? 100 : 0)
+
+        if isPlank {
+            return FormReportResponse(
+                exercise: selectedExercise,
+                total_reps: counter.holdSeconds,
+                summary: "Held a \(timerText(counter.holdSeconds)) plank. "
+                    + (pct >= 80 ? "Great straight-body form!" : "Watch your hip alignment next time."),
+                form_quality_pct: pct,
+                issues: [],
+                suggestions: ["Keep hips level with shoulders — avoid sagging or piking.",
+                              "Engage your core and breathe steadily throughout the hold."]
+            )
+        }
+
+        // Overall analysis: kelompokkan event per jenis error
+        var counts: [FormStatus: Int] = [:]
+        for e in counter.formEvents where e.status != .good {
+            counts[e.status, default: 0] += 1
+        }
+        let issues: [FormReportIssue] = counts
+            .sorted { $0.value > $1.value }
+            .map { status, c in
+                FormReportIssue(
+                    status: status.rawValue,
+                    label: status.label,
+                    count: c,
+                    pct: total > 0 ? Double(c) / Double(total) * 100 : 0
+                )
+            }
+
+        var suggestions: [String] = []
+        if counts[.notDeep] != nil { suggestions.append("Lower into a fuller range of motion each rep.") }
+        if counts[.kneeAlignment] != nil { suggestions.append("Drive your knees outward, in line with your toes.") }
+        if counts[.straighten] != nil { suggestions.append("Keep your back and hips aligned throughout.") }
+        if suggestions.isEmpty { suggestions = ["Great consistency — keep it up!"] }
+
+        let summary: String
+        if total == 0 {
+            summary = "Completed \(counter.count) reps. Stay fully in frame for form analysis."
+        } else if issues.isEmpty {
+            summary = "\(good)/\(total) reps with clean form — excellent work!"
+        } else {
+            let top = issues[0]
+            summary = "\(good)/\(total) reps clean. Most common issue: \(top.label.lowercased()) (\(top.count)×)."
+        }
+
         return FormReportResponse(
             exercise: selectedExercise,
             total_reps: max(total, counter.count),
-            summary: total > 0
-                ? "\(good) of \(total) reps with clean form."
-                : "Completed \(counter.count) reps.",
+            summary: summary,
             form_quality_pct: pct,
-            issues: [],
-            suggestions: ["Keep practicing with full body in frame for detailed feedback."]
+            issues: issues,
+            suggestions: suggestions
         )
     }
 
